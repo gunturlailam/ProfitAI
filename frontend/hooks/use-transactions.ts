@@ -54,12 +54,49 @@ export function useTransactions(filters?: TransactionFilters) {
   });
 }
 
+export function useTransactionPage(filters?: TransactionFilters) {
+  const { from, to } = useMemo(() => {
+    if (filters?.from_date && filters?.to_date) {
+      return {
+        from: String(filters.from_date).split("T")[0],
+        to: String(filters.to_date).split("T")[0],
+      };
+    }
+    const dateRange = getDateRangeForPeriod("MTD");
+    return { from: dateRange.from, to: dateRange.to };
+  }, [filters?.from_date, filters?.to_date]);
+
+  const finalParams = useMemo(() => ({
+    from_date: from,
+    to_date: to,
+    limit: filters?.limit,
+    skip: filters?.skip,
+    tx_type: filters?.tx_type,
+    category_id: filters?.category_id,
+    search: filters?.search,
+  }), [from, to, filters?.limit, filters?.skip, filters?.tx_type, filters?.category_id, filters?.search]);
+
+  return useQuery({
+    queryKey: ["transactions", "page", finalParams],
+    queryFn: () => transactionAPI.getTransactionsPage(finalParams),
+    staleTime: 1000 * 30,
+    retry: 1,
+    retryDelay: 1000,
+  });
+}
+
 export function useTransaction(id: number) {
   return useQuery({
     queryKey: ["transaction", id],
     queryFn: () => transactionAPI.getTransaction(id),
     enabled: Boolean(id),
   });
+}
+
+function invalidateRatioQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["ratios"] });
+  queryClient.invalidateQueries({ queryKey: ["ratio-insights"] });
+  queryClient.invalidateQueries({ queryKey: ["balance-sheet"] });
 }
 
 export function useCreateTransaction() {
@@ -71,6 +108,7 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["financial-summary"] });
       queryClient.invalidateQueries({ queryKey: ["financial-health"] });
+      invalidateRatioQueries(queryClient);
     },
   });
 }
@@ -91,6 +129,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: ["transaction", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["financial-summary"] });
       queryClient.invalidateQueries({ queryKey: ["financial-health"] });
+      invalidateRatioQueries(queryClient);
     },
   });
 }
@@ -105,6 +144,7 @@ export function useReverseTransaction() {
       queryClient.invalidateQueries({ queryKey: ["financial-summary"] });
       queryClient.invalidateQueries({ queryKey: ["financial-health"] });
       queryClient.invalidateQueries({ queryKey: ["recommendations"] });
+      invalidateRatioQueries(queryClient);
     },
   });
 }

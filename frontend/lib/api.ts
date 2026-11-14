@@ -75,8 +75,27 @@ export interface TransactionPayload {
   account_id?: number | null;
 }
 
+export interface TransactionRecord {
+  id: number;
+  transaction_date?: string;
+  description: string;
+  amount: string | number;
+  tx_type: string;
+  category_id?: number | null;
+  account_id?: number | null;
+  status?: string;
+  reversal_of_id?: number | null;
+}
+
+export interface TransactionPage {
+  items: TransactionRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export const transactionAPI = {
-  getTransactions: async (params?: {
+  getTransactionsPage: async (params?: {
     skip?: number;
     limit?: number;
     tx_type?: string;
@@ -84,7 +103,7 @@ export const transactionAPI = {
     search?: string;
     from_date?: string;
     to_date?: string;
-  }) => {
+  }): Promise<TransactionPage> => {
     // Parse dates to ensure they're in correct YYYY-MM-DD format
     const from_date = params?.from_date ? String(params.from_date).split("T")[0] : undefined;
     const to_date = params?.to_date ? String(params.to_date).split("T")[0] : undefined;
@@ -104,8 +123,28 @@ export const transactionAPI = {
       throw new Error("Date parameters are required (from_date and to_date)");
     }
 
-    const { data } = await apiClient.get("/transactions", { params: queryParams });
-    return data.items || [];
+    const { data } = await apiClient.get<TransactionPage>("/transactions", {
+      params: queryParams,
+    });
+    return {
+      items: data.items || [],
+      total: data.total ?? 0,
+      limit: data.limit ?? queryParams.limit,
+      offset: data.offset ?? queryParams.offset,
+    };
+  },
+
+  getTransactions: async (params?: {
+    skip?: number;
+    limit?: number;
+    tx_type?: string;
+    category_id?: number;
+    search?: string;
+    from_date?: string;
+    to_date?: string;
+  }) => {
+    const page = await transactionAPI.getTransactionsPage(params);
+    return page.items;
   },
 
   getTransaction: async (id: number) => {
@@ -164,8 +203,11 @@ export const financialAPI = {
 
 // Recommendation API
 export const recommendationAPI = {
-  getRecommendations: async (params: FinancialQueryParams) => {
-    return recommendationsApi.getRecommendations(params);
+  getRecommendations: async (
+    params: FinancialQueryParams,
+    options?: { persist?: boolean },
+  ) => {
+    return recommendationsApi.getRecommendations(params, options);
   },
 
   updateRecommendation: async (
@@ -176,6 +218,10 @@ export const recommendationAPI = {
       status,
     });
     return data;
+  },
+
+  explainRecommendation: async (id: string) => {
+    return recommendationsApi.explainRecommendation(id);
   },
 };
 

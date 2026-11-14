@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -18,7 +18,7 @@ import { Plus, Search, Receipt, Pencil, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
-  useTransactions,
+  useTransactionPage,
   useReverseTransaction,
 } from "@/hooks/use-transactions";
 import { useCategories } from "@/hooks/use-categories";
@@ -70,12 +70,24 @@ const typeLabels: Record<string, string> = {
   refund: "Refund",
 };
 
+const PAGE_SIZE = 25;
+
 function TransactionsContent() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(0);
   const [typeFilter, setTypeFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [toast, setToast] = useState<Toast | null>(null);
   const [reversingId, setReversingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setPage(0);
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
 
   const { data: categories = [] } = useCategories();
   const categoryOptions = [
@@ -87,32 +99,22 @@ function TransactionsContent() {
   ];
 
   const {
-    data: transactionsData = [],
+    data: transactionsPage,
     isLoading,
     error,
-  } = useTransactions({
+  } = useTransactionPage({
+    limit: PAGE_SIZE,
+    skip: page * PAGE_SIZE,
+    search: debouncedSearch || undefined,
     tx_type: typeFilter === "all" ? undefined : typeFilter,
     category_id:
       categoryFilter === "all" ? undefined : Number(categoryFilter),
   });
-  const transactions = transactionsData as TransactionRow[];
+  const transactions = (transactionsPage?.items ?? []) as TransactionRow[];
+  const total = transactionsPage?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const { mutate: reverseTransaction, isPending: isReversing } =
     useReverseTransaction();
-
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
-      const matchesSearch = (transaction.description || "")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesType =
-        typeFilter === "all" || transaction.tx_type === typeFilter;
-      const matchesCategory =
-        categoryFilter === "all" ||
-        String(transaction.category_id ?? "") === categoryFilter;
-
-      return matchesSearch && matchesType && matchesCategory;
-    });
-  }, [transactions, searchQuery, typeFilter, categoryFilter]);
 
   const handleReverse = (id: number) => {
     if (
@@ -190,12 +192,18 @@ function TransactionsContent() {
           <Select
             options={typeOptions}
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setPage(0);
+            }}
           />
           <Select
             options={categoryOptions}
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setPage(0);
+            }}
           />
         </div>
       </div>
@@ -228,7 +236,7 @@ function TransactionsContent() {
       {/* Table */}
       {!isLoading && !error && (
         <div className="bg-white rounded-2xl border border-[#EBE5DC]/70 shadow-[0_2px_16px_rgba(39,52,32,0.03)] overflow-hidden">
-          {filteredTransactions.length > 0 ? (
+          {transactions.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -240,7 +248,7 @@ function TransactionsContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTransactions.map((transaction) => (
+                {transactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell className="font-medium">
                       {formatDate(
@@ -331,18 +339,31 @@ function TransactionsContent() {
         </div>
       )}
 
-      {/* Pagination - placeholder */}
-      {!isLoading && filteredTransactions.length > 0 && (
-        <div className="flex items-center justify-between px-2">
+      {/* Server-side pagination */}
+      {!isLoading && !error && total > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-2">
           <p className="text-sm text-[#7E8379]">
-            Menampilkan {filteredTransactions.length} dari{" "}
-            {transactions.length} transaksi
+            Menampilkan {page * PAGE_SIZE + 1}–
+            {Math.min((page + 1) * PAGE_SIZE, total)} dari {total} transaksi
           </p>
-          <div className="flex gap-2">
-            <Button variant="secondary" size="sm" disabled>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page === 0}
+              onClick={() => setPage((current) => Math.max(0, current - 1))}
+            >
               Sebelumnya
             </Button>
-            <Button variant="secondary" size="sm" disabled>
+            <span className="text-xs text-[#7E8379] whitespace-nowrap">
+              Halaman {page + 1} dari {totalPages}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page + 1 >= totalPages}
+              onClick={() => setPage((current) => current + 1)}
+            >
               Berikutnya
             </Button>
           </div>

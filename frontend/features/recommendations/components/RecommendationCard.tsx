@@ -1,12 +1,26 @@
 "use client";
 
-import type { Recommendation } from "@/types/financial";
-import { Lightbulb, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
+import type {
+  Recommendation,
+  RecommendationExplanation,
+} from "@/types/financial";
+import {
+  Lightbulb,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface RecommendationCardProps {
   recommendation: Recommendation;
+  canAct?: boolean;
   onMarkDone?: (id: string) => void;
+  onExplain?: (id: string) => void;
+  explanation?: RecommendationExplanation;
+  isExplaining?: boolean;
+  explainError?: string;
 }
 
 const priorityColorMap = {
@@ -21,8 +35,15 @@ const priorityLabelMap = {
   high: "Tinggi",
 };
 
-export function RecommendationCard({ recommendation, onMarkDone }: RecommendationCardProps) {
-  const { id, title, priority, evidence, suggested_actions, assumptions, limitations, status, llm_explanation } = recommendation;
+export function RecommendationCard({
+  recommendation,
+  onMarkDone,
+  onExplain,
+  explanation,
+  isExplaining = false,
+  explainError,
+}: RecommendationCardProps) {
+  const { id, title, priority, evidence, suggested_actions, assumptions, limitations, status } = recommendation;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200/60 shadow-premium p-6 space-y-5 hover:border-emerald-200 hover:shadow-md transition-all">
@@ -52,16 +73,47 @@ export function RecommendationCard({ recommendation, onMarkDone }: Recommendatio
         </span>
       </div>
 
-      {llm_explanation && (
-        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/60 shadow-sm">
-          <div className="flex items-start gap-2.5">
-            <div className="w-6 h-6 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-              <span className="text-white text-xs font-bold">AI</span>
-            </div>
-            <p className="text-sm text-gray-900 leading-relaxed flex-1">
-              {llm_explanation}
-            </p>
+      {isExplaining && (
+        <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Menyiapkan penjelasan...</span>
+        </div>
+      )}
+
+      {explainError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Gagal memuat penjelasan: {explainError}
+        </div>
+      )}
+
+      {explanation && (
+        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/60 shadow-sm space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full border border-gray-300 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-700">
+              {explanation.source === "llm" ? "Narasi LLM" : "Narasi Rule-based"}
+            </span>
+            <span className="text-[11px] text-gray-500">
+              {explanation.llm_enabled
+                ? explanation.llm_available
+                  ? "LLM aktif"
+                  : "LLM fallback"
+                : "LLM nonaktif"}
+            </span>
           </div>
+          <p className="text-sm text-gray-900 leading-relaxed">
+            {explanation.explanation}
+          </p>
+          {explanation.fallback_reason && (
+            <p className="text-xs text-amber-700">
+              Alasan fallback: {explanation.fallback_reason}
+            </p>
+          )}
+          {explanation.privacy_note && (
+            <p className="text-xs text-gray-500">{explanation.privacy_note}</p>
+          )}
+          {explanation.disclaimer && (
+            <p className="text-[11px] text-gray-400">{explanation.disclaimer}</p>
+          )}
         </div>
       )}
 
@@ -147,8 +199,17 @@ export function RecommendationCard({ recommendation, onMarkDone }: Recommendatio
           >
             Tandai Selesai
           </Button>
-          <Button variant="ghost" size="sm">
-            Lihat Detail
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onExplain?.(id)}
+            disabled={isExplaining || !onExplain}
+          >
+            {isExplaining
+              ? "Memuat..."
+              : explanation
+                ? "Muat Ulang Penjelasan"
+                : "Jelaskan"}
           </Button>
         </div>
       )}

@@ -104,6 +104,11 @@ def fallback_narrative(code: str, band: str, quality: str = "ok",
         "action": action,
         "source": "fallback",
         "llm_enabled": False,
+        "llm_available": False,
+        "fallback_reason": (
+            "Data belum cukup; LLM tidak dipanggil." if band == "insufficient"
+            else None
+        ),
         "quality": quality,
         "disclaimer": DISCLAIMER,
     }

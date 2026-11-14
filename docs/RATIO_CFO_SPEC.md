@@ -75,7 +75,8 @@ Prinsip utama:
 
 **M3 — API rasio: selesai.**
 
-- `GET /api/v1/ratios` menghitung 16 rasio dan menyimpan `ratio_snapshots`.
+- `GET /api/v1/ratios` menghitung 16 rasio. Secara default tidak menulis;
+  `persist=true` (eksplisit) menyimpan/meng-upsert `ratio_snapshots` dan audit.
 - `GET /api/v1/balance-sheet` mengembalikan neraca atau `unavailable` + alasan.
 - `GET /api/v1/ratios/thresholds` dan
   `PATCH /api/v1/ratios/thresholds/{ratio_code}` (owner/admin, validasi urutan).
@@ -111,13 +112,16 @@ Non-goals tahap ini:
 1. **Deterministik:** semua rasio dihitung di `ratio_engine.py`, bukan di frontend/LLM.
 2. **Decimal:** uang dan rasio memakai `Decimal`; pembulatan hanya saat presentasi.
 3. **Tidak ada angka palsu:** input tidak lengkap → `value: null`, `status: "unavailable"`, `reason` jelas.
-4. **Bisa diaudit:** setiap respons menyimpan input, formula version, periode,
-   dan snapshot; `ratio_snapshots` menyimpan hasil per periode.
+4. **Bisa diaudit:** setiap respons menyertakan formula version, periode, dan
+   sumber input. `persist=true` dapat menyimpan `ratio_snapshots` per periode;
+   default GET tidak menulis.
 5. **AI tidak menghitung:** LLM hanya menerima kode/nama/kategori rasio, band,
    arah threshold, dan kualitas data.
 6. **Tenant-safe:** semua query dibatasi `organization_id` dari sesi server.
-7. **Role-safe:** ubah threshold hanya untuk `owner`/`admin`; guard untuk tutup
-   periode/master data belum berlaku karena endpoint-nya belum ada.
+7. **Role-safe:** master data dan threshold hanya untuk `owner`/`admin`;
+   transaksi dan feedback rekomendasi untuk `owner`/`admin`/`member`; `viewer`
+   read-only. Tutup periode menolak write bertanggal di periode terkunci
+   dengan HTTP `409`.
 8. **Test-first untuk formula:** setiap rasio punya kasus hitungan manual di
    test engine.
 
@@ -266,8 +270,9 @@ Aturan:
 }
 ```
 
-`snapshot_id` di level atas adalah ID baris `ratio_snapshots` yang di-upsert.
-`source.snapshot_id` adalah ID `balance_snapshots` yang dipakai sebagai input.
+`snapshot_id` di level atas hanya ada jika request memakai `persist=true`; itu
+ID baris `ratio_snapshots` yang di-upsert. `source.snapshot_id` selalu ID
+`balance_snapshots` yang dipakai sebagai input.
 
 Frontend **tidak boleh** menghitung ulang nilai; hanya menampilkan.
 
@@ -340,7 +345,7 @@ Belum ada (rencana M5): `ratio_rules.py`, `ratio_forecast.py`, dan fixture
 | Method | Path | Fungsi | Akses |
 |---|---|---|---|
 | GET | `/api/v1/balance-sheet?as_of=` | Neraca terakhir pada/sebelum tanggal; `status: unavailable` + alasan jika tidak ada | anggota org |
-| GET | `/api/v1/ratios?from=&to=&as_of=` | 16 rasio + threshold + band + narasi; menyimpan snapshot | anggota org |
+| GET | `/api/v1/ratios?from=&to=&as_of=&persist=` | 16 rasio + threshold + band + narasi; read-only kecuali `persist=true` | anggota org |
 | GET | `/api/v1/ratios/thresholds` | Threshold efektif per organisasi/industri | anggota org |
 | PATCH | `/api/v1/ratios/thresholds/{ratio_code}` | Override target/warning/critical/direction | owner/admin |
 | POST | `/api/v1/ratios/{ratio_code}/explain?from=&to=&as_of=` | Narasi LLM opsional; fallback selalu tersedia | anggota org |
@@ -349,8 +354,10 @@ Detail perilaku:
 
 - `from` dan `to` wajib; `from > to` → `422`.
 - `as_of` opsional. Default `to`. `as_of < from` → `422`.
-- `GET /ratios` meng-upsert `ratio_snapshots` dengan kunci
-  `(organization_id, period_from, period_to, formula_version)`.
+- `GET /ratios` default `persist=false` sehingga bebas side-effect.
+  `persist=true` meng-upsert `ratio_snapshots` dengan kunci
+  `(organization_id, period_from, period_to, formula_version)`, menulis audit
+  `RATIO_SNAPSHOT_PERSISTED`, dan memerlukan owner/admin/member.
 - `PATCH` memvalidasi urutan: `higher` → `critical <= warning <= target`;
   `lower` → `target <= warning <= critical`. Nilai persen disimpan desimal
   (`0.30` = 30%).
@@ -444,8 +451,10 @@ Setiap rekomendasi harus bisa ditelusuri ke `ratio_snapshot` + `rule_version`.
 ## 11. AI Narrative Rules
 
 Implementasi saat ini: `backend/app/llm_adapter.py` + `ratio_narrative.py`.
-Provider aktif adalah OpenAI-compatible adapter; DeepSeek belum diimplementasikan
-dan tetap menjadi opsi riset.
+Provider yang didukung: Gemini (REST/`httpx`, diprioritaskan bila
+`GEMINI_API_KEY` tersedia) dan OpenAI (jika `openai` terpasang). Tanpa
+konfigurasi valid, adapter tidak error dan selalu memakai fallback rule-based.
+DeepSeek belum diimplementasikan dan tetap menjadi opsi riset.
 
 Input LLM hanya field whitelist berikut:
 
@@ -479,7 +488,9 @@ Output LLM adalah teks penjelasan biasa (bukan JSON). Validasi:
 
 Fallback: template per `ratio_code` + `band` di `ratio_narrative.py`. Jika LLM
 gagal/timeout/tidak aktif, respons tetap `200`, `source: "fallback"`, dan
-`privacy_note` menjelaskan penyebabnya. `narrative` pada `GET /ratios` selalu
+`privacy_note` menjelaskan penyebabnya. Respons juga menyertakan
+`llm_enabled`, `llm_available`, dan `fallback_reason` agar UI dapat membedakan
+LLM aktif, fallback, dan LLM nonaktif. `narrative` pada `GET /ratios` selalu
 rule-based karena tidak memanggil LLM; LLM hanya dipanggil lewat endpoint
 `explain`.
 
@@ -508,8 +519,9 @@ rule-based karena tidak memanggil LLM; LLM hanya dipanggil lewat endpoint
 - `RatioTrendChart`, sparkline, toast, dan UI pengaturan threshold.
 - `PeriodSelector` berbasis daftar periode tersedia (saat ini tab tetap).
 
-State wajib: loading, empty, error, partial, locked period. Untuk periode
-terkunci belum ada karena endpoint tutup/buka periode belum dibuat.
+State wajib: loading, empty, error, partial, locked period. Backend sudah
+menyediakan `POST /api/v1/accounting-periods/{id}/close` dan `/reopen`; UI
+status periode terkunci belum dibuat.
 
 Aturan:
 
@@ -532,8 +544,10 @@ Aturan:
   threshold/explain, tenant isolation.
 - `tests/test_ratio_narrative.py`: fallback tanpa API key, sanitasi payload,
   validasi output, dan tidak ada kegagalan saat LLM tidak tersedia.
+- `tests/test_regressions.py`: regresi P&L, role/audit, period close,
+  rekomendasi period-scoped, GET read-only, inventory, fallback LLM.
 
-Hasil terakhir: **27 passed** (SQLite sementara; tidak menyentuh PostgreSQL
+Hasil terakhir: **40 passed** (SQLite sementara; tidak menyentuh PostgreSQL
 aplikasi).
 
 ### 13.2 Frontend — sudah ada
@@ -553,7 +567,8 @@ Hasil terakhir: **41 passed / 6 suite**, ESLint 0 warning, `tsc --noEmit` lulus,
 - Tenant isolation untuk seluruh endpoint baru di PostgreSQL nyata (unit test
   memakai SQLite).
 - E2E: login → tambah transaksi → tutup periode → lihat rasio → detail →
-  explain → rekomendasi. Endpoint tutup periode dan halaman detail belum ada.
+  explain → rekomendasi. Endpoint tutup periode sudah ada; halaman detail rasio
+  dan E2E otomatis belum ada.
 
 CI gate:
 
@@ -613,15 +628,16 @@ Sudah:
 - Semua endpoint rasio/neraca dibatasi `organization_id` dari principal server,
   bukan dari client.
 - `PATCH /ratios/thresholds/{ratio_code}` wajib owner/admin.
-- Audit `RATIO_THRESHOLD_UPDATED` ditulis saat threshold diubah.
+- Master data (akun, kategori, piutang, utang, persediaan, aset tetap,
+  pinjaman) dan `risk-rules` wajib owner/admin; transaksi/import/feedback
+  rekomendasi wajib owner/admin/member; viewer read-only.
+- Audit `RATIO_THRESHOLD_UPDATED`, `RISK_RULE_UPDATED`, dan
+  `RATIO_SNAPSHOT_PERSISTED` ditulis dalam transaksi DB yang sama.
 - Payload LLM disanitasi; nominal/PII tidak dikirim.
 - Session login, logout, dan revoke sudah ada di auth.
 
 Belum:
 
-- Endpoint tutup/buka periode dan master data (piutang, persediaan, aset,
-  pinjaman) belum ada, sehingga guard owner/admin untuk aksi tersebut belum
-  berlaku.
 - Audit `RATIO_EXPLAINED` belum ditulis.
 - Rate limit login belum diverifikasi dalam scope ini.
 - Feature flag rasio belum ada.
@@ -662,8 +678,8 @@ Demo 7 menit yang **benar-benar bisa dilakukan sekarang**:
 7. Klik “Jelaskan” pada satu rasio → narasi AI/fallback.
 8. Slide roadmap: tren, aging, forecast, rekomendasi tersimpan.
 
-Tutup periode, detail rasio, tren, dan rekomendasi tersimpan belum ada di UI,
-jadi jangan menjanjikannya sebagai demo live.
+Halaman rekomendasi tersimpan sudah ada. Detail rasio, tren, dan kontrol tutup
+periode belum ada di UI, jadi jangan menjanjikannya sebagai demo live.
 
 ---
 
@@ -705,11 +721,13 @@ Estimasi: 24 hari kerja (1 orang) atau 10–14 hari (2–3 orang paralel).
    saat ini memakai default UMKM generik.
 2. Apakah rasio hanya boleh dihitung setelah tutup periode — **belum
    diputuskan**. Implementasi saat ini menghitung preview dari data berjalan
-   dan menandai kualitas data; endpoint tutup periode belum ada.
+   dan menandai kualitas data; endpoint tutup/buka periode sudah tersedia,
+   tetapi UI dan kebijakan pemblokiran baca belum ditetapkan.
 3. Apakah user boleh override nilai neraca manual — **belum diputuskan**. Saat
    ini neraca berasal dari snapshot yang di-seed/API, belum ada form UI.
-4. Provider LLM — **diputuskan sementara**: adapter OpenAI-compatible aktif
-   secara opsional; DeepSeek tetap opsi riset, belum diimplementasikan.
+4. Provider LLM — **diputuskan**: Gemini via REST diprioritaskan bila key
+   tersedia; OpenAI didukung opsional. DeepSeek tetap opsi riset, belum
+   diimplementasikan.
 5. Target demo — **diputuskan**: M0–M4 untuk demo inti; M5 predictive ditunda.
 6. Owner tiap milestone — belum berubah dari tabel di atas.
 

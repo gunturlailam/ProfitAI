@@ -10,8 +10,6 @@ import {
   TrendingUp,
   Lightbulb,
   Settings,
-  Sparkles,
-  ArrowUpRight,
   Gauge,
   Upload,
   Scale,
@@ -142,33 +140,6 @@ export function Sidebar() {
         </nav>
       </div>
 
-      {/* Premium Upgrade Card - More Elegant */}
-      <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-[#2a2a2a] to-[#1a1a1a] border border-[#ffc900]/30 text-white relative overflow-hidden group hover-lift">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#ffc900]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        
-        <div className="relative z-10">
-          <div className="w-10 h-10 rounded-lg bg-[#ffc900] flex items-center justify-center mb-3 shadow-lg shadow-[#ffc900]/25">
-            <Sparkles className="w-5 h-5 text-[#1a1a1a]" strokeWidth={2.5} />
-          </div>
-          
-          <h4 className="text-sm font-bold text-white mb-1">
-            Upgrade ke Pro
-          </h4>
-          <p className="text-xs leading-relaxed text-[#cccccc] mb-4">
-            Forecasting AI & insight mendalam untuk bisnis Anda.
-          </p>
-          
-          <button className="w-full bg-[#ffc900] hover:bg-[#f0bd00] text-[#1a1a1a] text-xs font-bold py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md group/btn">
-            <span>Mulai Sekarang</span>
-            <ArrowUpRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-          </button>
-        </div>
-
-        {/* Decorative Elements */}
-        <div className="absolute -right-8 -bottom-8 w-24 h-24 bg-[#ffc900]/5 rounded-full blur-2xl" />
-        <div className="absolute -left-4 -top-4 w-16 h-16 bg-[#ffc900]/10 rounded-full blur-xl" />
-      </div>
     </aside>
   );
 }

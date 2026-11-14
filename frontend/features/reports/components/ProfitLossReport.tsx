@@ -152,7 +152,7 @@ export function ProfitLossReport({ data }: ProfitLossReportProps) {
               <div className="border-t border-gray-200 my-3"></div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-base font-semibold text-gray-900">
-                  Laba Operasional
+                  Surplus Operasional (estimasi)
                 </span>
                 <div className="text-right">
                   <span className="financial-number text-lg font-bold text-gray-900 block">

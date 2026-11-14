@@ -30,20 +30,22 @@ This table mixes implemented and proposed endpoints. Ratio endpoints marked in
 | GET/POST | `/api/v1/transactions` | List/create |
 | GET/PATCH | `/api/v1/transactions/{id}` | Read/update |
 | POST | `/api/v1/transactions/{id}/reverse` | Reverse/void with audit |
-| POST | `/api/v1/imports/transactions/preview` | Parse and validate upload |
-| POST | `/api/v1/imports/{id}/confirm` | Confirm import |
+| POST | `/api/v1/imports/transactions/preview` | Parse, validate, and create an import batch |
+| POST | `/api/v1/imports/transactions/confirm` | Confirm a previewed batch by `batch_id` |
 | GET | `/api/v1/financial/summary` | KPI summary |
 | GET | `/api/v1/financial/profit-loss` | Profit/loss summary |
 | GET | `/api/v1/financial/cash-flow` | Cash movement summary |
-| GET | `/api/v1/financial/health` | Health signals |
+| GET | `/api/v1/financial/health` | Deterministic health signals; read-only unless `persist=true` |
 | GET | `/api/v1/balance-sheet` | Balance sheet as of a date |
-| GET | `/api/v1/ratios` | Compute all CFO ratios for a period |
+| GET | `/api/v1/ratios` | Compute all CFO ratios; read-only unless `persist=true` |
 | GET | `/api/v1/ratios/thresholds` | Effective ratio thresholds |
 | PATCH | `/api/v1/ratios/thresholds/{ratio_code}` | Override thresholds (owner/admin) |
 | POST | `/api/v1/ratios/{ratio_code}/explain` | Optional LLM narrative with fallback |
 | POST | `/api/v1/forecasts/cash-flow` | Create/evaluate forecast |
 | GET | `/api/v1/forecasts/{id}` | Forecast result |
-| GET | `/api/v1/recommendations` | Recommendation list |
+| GET | `/api/v1/recommendations` | Period-scoped rule recommendations; read-only unless `persist=true` |
+| PATCH | `/api/v1/recommendations/{id}` | Save status/feedback (owner/admin/member) |
+| POST | `/api/v1/recommendations/{id}/explain` | Optional LLM narrative with deterministic fallback |
 
 Do not implement all endpoints at once. P0 endpoints are health, auth/org, transaction CRUD, and financial summary.
 
@@ -60,6 +62,9 @@ Financial endpoints:
 - `compare`: optional comparable prior period.
 - `currency`: default IDR if supported.
 - organization is derived from authorized context or validated membership, never trusted blindly.
+- `persist` (optional, default `false`) is only accepted by derived-data GETs
+  (`/financial/health`, `/ratios`, `/recommendations`). It writes a history row
+  and requires at least a member role. Without it, the GET is side-effect free.
 
 Transaction list (`GET /api/v1/transactions`):
 - `from`, `to` (required): inclusive date range.
@@ -93,12 +98,15 @@ Transaction list (`GET /api/v1/transactions`):
 Implemented in `backend/app/main.py` and `backend/app/ratio_service.py`.
 Full behavior and ratio definitions: `docs/RATIO_CFO_SPEC.md` §5–§8.
 
-- `GET /api/v1/ratios?from=&to=&as_of=`
+- `GET /api/v1/ratios?from=&to=&as_of=&persist=`
   - `from`/`to` required; `as_of` optional (default `to`).
   - Returns 16 ratio results plus `period`, `as_of`, `currency`,
-    `formula_version`, `data_quality`, `source`, and `snapshot_id`.
-  - Upserts a `ratio_snapshots` row as an audit/cache side effect. Values are
-    still recomputed from current data on every request.
+    `formula_version`, `data_quality`, and `source`.
+  - By default the endpoint does **not** write. With explicit `persist=true`
+    it upserts a `ratio_snapshots` row, returns top-level `snapshot_id`, writes
+    audit event `RATIO_SNAPSHOT_PERSISTED`, and requires owner/admin/member.
+    Values are still recomputed from current data on every request; the stored
+    row is audit/cache, not the source of truth.
   - Each ratio includes `code`, `name`, `category`, `value` (decimal string or
     `null`), `display`, `status` (`available`/`unavailable`), `quality`
     (`ok`/`partial`/`insufficient`), `reason` when unavailable, `threshold`
@@ -127,11 +135,13 @@ Full behavior and ratio definitions: `docs/RATIO_CFO_SPEC.md` §5–§8.
   - Writes audit event `RATIO_THRESHOLD_UPDATED`.
 
 - `POST /api/v1/ratios/{ratio_code}/explain?from=&to=&as_of=`
-  - Calls an optional OpenAI-compatible LLM with only ratio code/name,
-    category, band, direction, and data quality.
+  - Calls the configured LLM provider (Gemini or OpenAI) with only ratio
+    code/name, category, band, direction, and data quality.
   - Returns `explanation`, `action`, `source` (`llm`/`fallback`),
-    `llm_enabled`, optional `privacy_note`, and `disclaimer`.
-  - LLM failure or invalid output always falls back with HTTP `200`.
+    `llm_enabled`, `llm_available`, `fallback_reason`, optional
+    `privacy_note`, and `disclaimer`.
+  - LLM failure, timeout, missing key, or invalid output always falls back with
+    HTTP `200`. The numeric ratio always comes from the deterministic engine.
 
 ### Example ratio response (abridged)
 
@@ -184,8 +194,9 @@ Full behavior and ratio definitions: `docs/RATIO_CFO_SPEC.md` §5–§8.
 }
 ```
 
-`snapshot_id` at the top level is the upserted `ratio_snapshots` row.
-`source.snapshot_id` is the `balance_snapshots` row used as input.
+Top-level `snapshot_id` is present only when the request used
+`persist=true`; it identifies the upserted `ratio_snapshots` row.
+`source.snapshot_id` is always the `balance_snapshots` row used as input.
 
 ## 4.2 Missing inputs
 
@@ -193,6 +204,60 @@ If an input or denominator is missing, the ratio response uses
 `status: "unavailable"`, `value: null`, and an explicit Indonesian `reason`.
 Clients must not display a numeric value in that case. The frontend renders an
 explanatory state instead.
+
+## 4.3 Recommendations
+
+- `GET /api/v1/recommendations?from=&to=&persist=`
+  - Generates recommendations from the deterministic rule engine for exactly
+    the requested period.
+  - Default `persist=false`: returns generated items with `id: null` when no
+    persisted row exists. It does not write.
+  - `persist=true`: upserts one row per `(organization_id, rule_id,
+    period_from, period_to)`, refreshes evidence for that period, preserves
+    existing status/feedback, writes audit event
+    `RECOMMENDATIONS_PERSISTED`, and requires owner/admin/member.
+  - Response contains `period`, `persisted`, `generated_at`, and each item's
+    `id`, `rule_id`, `rule_version`, `period`, `evidence`, actions,
+    assumptions, limitations, `status`, and `user_feedback`.
+- `PATCH /api/v1/recommendations/{id}` saves `status`
+  (`active`/`reviewed`/`dismissed`) and optional `user_feedback`. Owner/admin/
+  member only; writes audit event `RECOMMENDATION_FEEDBACK`.
+- `POST /api/v1/recommendations/{id}/explain` returns a narrative about the
+  already-computed recommendation. It never changes numbers or evidence.
+  - `source`: `llm` or `fallback`.
+  - Includes `llm_enabled`, `llm_available`, `fallback_reason`,
+    `privacy_note`, and `disclaimer`.
+  - Missing key, provider timeout, rate limit, or invalid output returns HTTP
+    `200` with the deterministic fallback.
+
+## 4.4 Profit/loss semantics
+
+`GET /api/v1/financial/profit-loss` and `/financial/summary` use these rules:
+
+- `net_revenue = income - refund` (sales discounts only when recorded).
+- `operating_profit` in the P&L response is a **simple surplus**
+  (`net_revenue - operating_expenses`) and must be labeled as an estimate in UI.
+- `net_profit`, `net_margin`, `gross_profit`, and `gross_margin` are
+  `unavailable` while COGS, other income, finance cost, and tax classification
+  are incomplete. The response includes an explicit `reason`; clients must not
+  show zero.
+- `/financial/summary` similarly returns `net_profit` as `unavailable`; use
+  `simple_surplus` only as a cash-basis surplus, not as formal profit.
+- `transfer`, `owner_contribution`, `owner_draw`, `loan_received`, and
+  `loan_repayment` are excluded from revenue and operating expense.
+
+## 4.5 Authorization and audit
+
+- Reads require authenticated organization membership resolved server-side.
+- Master data (`organizations`, `members`, `accounts`, `categories`,
+  `risk-rules`, `ratios/thresholds`): owner/admin.
+- Transactions, opening balances, receivables, payables, inventory, fixed
+  assets, loans, imports, forecasts, recommendation feedback: owner/admin/member.
+- Viewer is read-only.
+- Every write must write an audit event in the same DB transaction. If the
+  audit insert fails, the write must fail instead of silently losing the trail.
+- A closed accounting period rejects transactions, reversals, opening balances,
+  imports, and other dated writes with HTTP `409`.
 
 ## 5. Error envelope
 

@@ -7,3 +7,4 @@ alembic
 pytest
 httpx
 python-multipart
+openai>=1.0.0

@@ -1,10 +1,24 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ratiosApi, type RatioQueryParams } from "../api/ratios-api";
+import {
+  ratiosApi,
+  type RatioInsightQueryParams,
+  type RatioQueryParams,
+} from "../api/ratios-api";
 
 export function useRatios(params: RatioQueryParams) {
   return useQuery({
     queryKey: ["ratios", params],
     queryFn: () => ratiosApi.getRatios(params),
+    enabled: Boolean(params.from && params.to),
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useRatioInsights(params: RatioInsightQueryParams) {
+  return useQuery({
+    queryKey: ["ratio-insights", params],
+    queryFn: () => ratiosApi.getRatioInsights(params),
     enabled: Boolean(params.from && params.to),
     staleTime: 1000 * 60,
     refetchOnWindowFocus: true,

@@ -68,6 +68,9 @@ def get_snapshot(
         .filter(
             models.BalanceSnapshot.organization_id == organization_id,
             models.BalanceSnapshot.as_of_date <= as_of,
+            # Engine hanya boleh memakai snapshot final. Draft adalah working
+            # copy yang belum direview dan tidak boleh menjadi dasar rasio.
+            models.BalanceSnapshot.status == "final",
         )
         .order_by(models.BalanceSnapshot.as_of_date.desc())
         .first()
@@ -82,6 +85,7 @@ def get_previous_snapshot(
         .filter(
             models.BalanceSnapshot.organization_id == organization_id,
             models.BalanceSnapshot.as_of_date < before_date,
+            models.BalanceSnapshot.status == "final",
         )
         .order_by(models.BalanceSnapshot.as_of_date.desc())
         .first()
@@ -103,7 +107,7 @@ def _snapshot_lines(db, snapshot_id: int):
 def _aggregate_snapshot(db, snapshot: Optional[models.BalanceSnapshot]):
     """Kembalikan (roles, totals, line_rows, warnings)."""
     if snapshot is None:
-        return {}, {}, [], ["Tidak ada balance snapshot untuk periode ini."]
+        return {}, {}, [], ["Tidak ada balance snapshot final untuk periode ini."]
 
     rows = _snapshot_lines(db, snapshot.id)
     if not rows:
@@ -441,6 +445,44 @@ def compute_ratio_snapshot(
     return result
 
 
+def history_ratios(
+    db,
+    organization_id: int,
+    period_to: date,
+    limit: int = 12,
+) -> list[dict]:
+    """Riwayat rasio dari `ratio_snapshots` (lama→baru) untuk analisis tren.
+
+    Hanya snapshot tersimpan yang dipakai; titik periode berjalan ditambahkan
+    oleh pemanggil (ratio_insights.build_insights).
+    """
+    rows = (
+        db.query(models.RatioSnapshot)
+        .filter(
+            models.RatioSnapshot.organization_id == organization_id,
+            models.RatioSnapshot.period_to <= period_to,
+        )
+        .order_by(models.RatioSnapshot.period_to.desc())
+        .limit(max(limit, 1))
+        .all()
+    )
+    rows.reverse()
+    history = []
+    for row in rows:
+        values = {
+            item.get("code"): item.get("value")
+            for item in (row.ratios or [])
+            if isinstance(item, dict) and item.get("code")
+        }
+        history.append({
+            "as_of": str(row.as_of_date),
+            "period_from": str(row.period_from),
+            "period_to": str(row.period_to),
+            "ratios": values,
+        })
+    return history
+
+
 def balance_sheet(
     db,
     organization_id: int,
@@ -451,7 +493,7 @@ def balance_sheet(
         return {
             "as_of": str(as_of),
             "status": "unavailable",
-            "reason": "Belum ada balance snapshot untuk tanggal ini.",
+            "reason": "Belum ada balance snapshot final untuk tanggal ini. Finalisasi snapshot terlebih dahulu.",
             "assets": [],
             "liabilities": [],
             "equity": [],

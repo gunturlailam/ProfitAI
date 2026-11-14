@@ -32,6 +32,8 @@ export interface RatioNarrative {
   action: string;
   source: "fallback" | "llm";
   llm_enabled: boolean;
+  llm_available?: boolean;
+  fallback_reason?: string | null;
   quality: RatioQuality;
   disclaimer: string;
   privacy_note?: string;
@@ -115,6 +117,98 @@ export interface RatioExplainResponse {
   action: string;
   source: "fallback" | "llm";
   llm_enabled: boolean;
+  llm_available?: boolean;
+  fallback_reason?: string | null;
   privacy_note?: string;
   disclaimer: string;
+}
+
+// ─── Ratio insights (Descriptive / Predictive / Prescriptive) ────────────────
+// Semua field di sini berasal dari engine deterministik backend
+// (`ratio_insights.py`). Frontend hanya merender, tidak menghitung ulang.
+
+export type RatioAlertLevel = "critical" | "warning";
+
+export interface RatioAlert {
+  code: string;
+  category: RatioCategory;
+  category_label: string;
+  level: RatioAlertLevel;
+  title: string;
+  message: string;
+  ratio_codes: string[];
+  direction: "down";
+  rule_version: string;
+  evidence: string[];
+}
+
+export type PredictiveTrend = "up" | "down" | "flat";
+
+export interface PredictiveSeriesAvailable {
+  code: string;
+  name: string;
+  category: RatioCategory;
+  unit: RatioUnit;
+  status: "available";
+  points: number;
+  current: string | null;
+  projected: string | null;
+  horizon: number;
+  trend: PredictiveTrend;
+  risk: boolean;
+  note: string;
+  method: string;
+}
+
+export interface PredictiveSeriesInsufficient {
+  code: string;
+  name: string;
+  category: RatioCategory;
+  status: "insufficient";
+  points: number;
+  reason: string;
+}
+
+export type PredictiveSeries =
+  | PredictiveSeriesAvailable
+  | PredictiveSeriesInsufficient;
+
+export interface RatioPredictive {
+  horizon: number;
+  min_points: number;
+  method: string;
+  series: PredictiveSeries[];
+}
+
+export type PrescriptivePriority = "high" | "medium" | "low";
+
+export interface RatioPrescriptive {
+  rule_id: string;
+  rule_version: string;
+  ratio_code: string;
+  ratio_name: string | null;
+  category: RatioCategory;
+  priority: PrescriptivePriority;
+  band: RatioBand;
+  display: string | null;
+  title: string;
+  trigger_metrics: Record<string, string | null>;
+  suggested_actions: string[];
+  evidence: string[];
+  assumptions: string[];
+  limitations: string[];
+  confidence_label: string;
+}
+
+export interface RatioInsightsResponse {
+  period: Period;
+  as_of: string;
+  currency: string;
+  formula_version: string;
+  rules_version: string;
+  has_previous_period: boolean;
+  history_points: number;
+  alerts: RatioAlert[];
+  predictive: RatioPredictive;
+  prescriptive: RatioPrescriptive[];
 }

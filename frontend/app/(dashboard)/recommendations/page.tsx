@@ -8,7 +8,8 @@ import { Alert } from "@/components/ui/Alert";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getErrorMessage, recommendationAPI } from "@/lib/api";
 import { getDateRangeForPeriod, type PeriodType } from "@/lib/date-utils";
-import type { Recommendation } from "@/types/financial";
+import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
+import type { Recommendation, RecommendationExplanation } from "@/types/financial";
 import { Filter, Sparkles } from "lucide-react";
 
 export default function RecommendationsPage() {
@@ -25,15 +26,54 @@ export default function RecommendationsPage() {
 
   const queryClient = useQueryClient();
   const [feedbackError, setFeedbackError] = useState("");
+  const [explanations, setExplanations] = useState<
+    Record<string, RecommendationExplanation>
+  >({});
+  const [explanationErrors, setExplanationErrors] = useState<
+    Record<string, string>
+  >({});
 
-  // Fetch recommendations from API
-  const { data: recommendationsData, isLoading, error } = useQuery({
-    queryKey: ["recommendations", dateRange],
-    queryFn: () => recommendationAPI.getRecommendations(dateRange),
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const canActOnRecommendations = currentUser
+    ? ["owner", "admin", "member"].includes(currentUser.role)
+    : false;
+
+  // Fetch recommendations from API. Viewer tetap mendapat data read-only;
+  // persistensi histori hanya diminta oleh role yang boleh menulis.
+  const {
+    data: recommendationsData,
+    isLoading: isRecommendationsLoading,
+    error,
+  } = useQuery({
+    queryKey: ["recommendations", dateRange, canActOnRecommendations],
+    queryFn: () =>
+      recommendationAPI.getRecommendations(dateRange, {
+        persist: canActOnRecommendations,
+      }),
+    enabled: Boolean(currentUser),
   });
+  const isLoading = isUserLoading || isRecommendationsLoading;
 
   // Optimistic UI; status akhir tetap dipersist ke backend.
   const [reviewedIds, setReviewedIds] = useState<Record<string, boolean>>({});
+
+  const explainMutation = useMutation({
+    mutationFn: (id: string) => recommendationAPI.explainRecommendation(id),
+    onSuccess: (data, id) => {
+      setExplanations((prev) => ({ ...prev, [id]: data }));
+      setExplanationErrors((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    },
+    onError: (mutationError, id) => {
+      setExplanationErrors((prev) => ({
+        ...prev,
+        [id]: getErrorMessage(mutationError),
+      }));
+    },
+  });
 
   const markMutation = useMutation({
     mutationFn: ({
@@ -58,11 +98,10 @@ export default function RecommendationsPage() {
   });
 
   const recommendations = useMemo<Recommendation[]>(() => {
-    return (recommendationsData?.recommendations ?? []).map((rec) => ({
-      ...rec,
-      period: rec.period || { from: dateRange.from, to: dateRange.to },
-    }));
-  }, [recommendationsData, dateRange]);
+    // Backend mengembalikan rekomendasi yang sudah period-scoped. Frontend
+    // tidak boleh mengisi period sendiri.
+    return recommendationsData?.recommendations ?? [];
+  }, [recommendationsData]);
 
   const localRecommendations = useMemo<Recommendation[]>(() => {
     return recommendations.map((rec) =>
@@ -78,7 +117,7 @@ export default function RecommendationsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-sm text-gray-600">Memuat rekomendasi AI...</p>
+          <p className="mt-4 text-sm text-gray-600">Memuat rekomendasi...</p>
         </div>
       </div>
     );
@@ -101,7 +140,7 @@ export default function RecommendationsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Rekomendasi AI
+            Rekomendasi
           </h1>
           <p className="text-sm text-gray-600 mt-1">
             Saran berbasis analisis data keuangan Anda
@@ -272,9 +311,23 @@ export default function RecommendationsPage() {
       <div className="space-y-5">
         {filteredRecommendations.map((rec) => (
           <RecommendationCard
-            key={rec.id}
+            key={rec.id ?? rec.rule_id}
             recommendation={rec}
+            canAct={canActOnRecommendations}
             onMarkDone={handleMarkDone}
+            onExplain={(id) => {
+              setExplanationErrors((prev) => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+              });
+              explainMutation.mutate(id);
+            }}
+            explanation={explanations[rec.id]}
+            isExplaining={
+              explainMutation.isPending && explainMutation.variables === rec.id
+            }
+            explainError={explanationErrors[rec.id]}
           />
         ))}
       </div>

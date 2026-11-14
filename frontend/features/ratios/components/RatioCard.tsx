@@ -111,6 +111,21 @@ export function RatioCard({
             {isExplaining ? "Menyusun..." : "Jelaskan"}
           </Button>
         </div>
+        {explanation?.llm_enabled !== undefined && (
+          <p className="mt-2 text-[10px] text-[#A0A59B]">
+            Status LLM:{" "}
+            {explanation.llm_available
+              ? "aktif"
+              : explanation.llm_enabled
+                ? "fallback"
+                : "nonaktif"}
+          </p>
+        )}
+        {explanation?.fallback_reason && (
+          <p className="mt-1 text-[10px] leading-relaxed text-amber-700">
+            Alasan fallback: {explanation.fallback_reason}
+          </p>
+        )}
         {explanation?.privacy_note && (
           <p className="mt-2 text-[10px] leading-relaxed text-[#A0A59B]">
             {explanation.privacy_note}

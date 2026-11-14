@@ -176,7 +176,7 @@ export interface Recommendation {
   title: string;
   priority: "low" | "medium" | "high";
   trigger_metrics: Record<string, string | number>;
-  period: Period;
+  period?: Period;
   evidence: string[];
   suggested_actions: string[];
   assumptions: string[];
@@ -185,4 +185,21 @@ export interface Recommendation {
   status: "active" | "reviewed" | "dismissed";
   created_at: string;
   llm_explanation?: string; // Optional LLM-generated explanation
+}
+
+export interface RecommendationExplanation {
+  recommendation_id: number | string;
+  rule_id: string;
+  title: string;
+  period?: {
+    from: string | null;
+    to: string | null;
+  };
+  explanation: string;
+  source: "llm" | "fallback";
+  llm_enabled: boolean;
+  llm_available: boolean;
+  fallback_reason?: string | null;
+  privacy_note?: string;
+  disclaimer?: string;
 }

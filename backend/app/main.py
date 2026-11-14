@@ -23,6 +23,7 @@ from .financial_engine import (
 from .llm_adapter import generate_explanation
 from . import ratio_service
 from . import ratio_narrative
+from . import ratio_insights
 from .ratio_engine import RATIO_META
 
 app = FastAPI(title="ProfitAI API", version="0.1.0")
@@ -64,25 +65,28 @@ def require_org_role(db, org_id, user, allowed=("owner", "admin")):
     m = (db.query(models.Membership)
          .filter_by(organization_id=org_id, user_id=user.id).first())
     if m is None or m.role not in allowed:
-        raise HTTPException(403, "Hanya owner/admin yang dapat melakukan aksi ini")
+        roles = ", ".join(allowed)
+        raise HTTPException(403, f"Aksi ini memerlukan role: {roles}")
     return m
 
 
 def log_audit(db, org_id, user_id, action, entity_type=None, entity_id=None, payload=None, ip=None):
-    try:
-        ev = models.AuditEvent(
-            organization_id=org_id,
-            user_id=user_id,
-            action=action,
-            entity_type=entity_type,
-            entity_id=entity_id,
-            payload=jsonable_encoder(payload) if payload is not None else None,
-            ip_address=ip
-        )
-        db.add(ev)
-        db.flush()
-    except Exception:
-        pass
+    """Tambahkan audit event ke transaksi DB yang sama.
+
+    Sengaja tidak menelan exception: write yang tidak dapat mencatat audit
+    harus gagal agar trail tidak bolong tanpa disadari.
+    """
+    ev = models.AuditEvent(
+        organization_id=org_id,
+        user_id=user_id,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        payload=jsonable_encoder(payload) if payload is not None else None,
+        ip_address=ip
+    )
+    db.add(ev)
+    db.flush()
 
 # ==========================================
 # 1. SYSTEM & AUTHENTICATION
@@ -203,6 +207,7 @@ def update_organization(target_org_id: int, p: schemas.OrganizationUpdate,
                         user=Depends(get_current_user), org_id=Depends(get_current_org), db=Depends(get_db)):
     if target_org_id != org_id:
         raise HTTPException(403, "Akses ke organisasi lain ditolak")
+    require_org_role(db, org_id, user)
     org = db.query(models.Organization).filter_by(id=org_id).first()
     if not org:
         raise HTTPException(404, "Organisasi tidak ditemukan")
@@ -213,13 +218,15 @@ def update_organization(target_org_id: int, p: schemas.OrganizationUpdate,
 
     if p.name:
         org.name = p.name
-    if p.industry is not None:
+    # Gunakan model_fields_set agar nilai null dari client benar-benar
+    # mengosongkan field, bukan diabaikan.
+    if "industry" in p.model_fields_set:
         profile.industry = p.industry
-    if p.currency:
+    if "currency" in p.model_fields_set and p.currency:
         profile.currency = p.currency
-    if p.timezone:
+    if "timezone" in p.model_fields_set and p.timezone:
         profile.timezone = p.timezone
-    if p.accounting_basis:
+    if "accounting_basis" in p.model_fields_set and p.accounting_basis:
         profile.accounting_basis = p.accounting_basis
 
     log_audit(db, org_id, user.id, "ORGANIZATION_UPDATED", "organizations", org_id, p.model_dump(exclude_unset=True))
@@ -257,6 +264,7 @@ def add_member(target_org_id: int, p: schemas.MemberAdd,
                user=Depends(get_current_user), org_id=Depends(get_current_org), db=Depends(get_db)):
     if target_org_id != org_id:
         raise HTTPException(403, "Akses ke organisasi lain ditolak")
+    require_org_role(db, org_id, user)
     target_user = db.query(models.User).filter_by(email=p.email.strip().lower()).first()
     if not target_user:
         raise HTTPException(404, "User dengan email tersebut belum terdaftar di sistem")
@@ -274,6 +282,7 @@ def update_member_role(target_org_id: int, target_user_id: int, p: schemas.Membe
                        user=Depends(get_current_user), org_id=Depends(get_current_org), db=Depends(get_db)):
     if target_org_id != org_id:
         raise HTTPException(403, "Akses ke organisasi lain ditolak")
+    require_org_role(db, org_id, user)
     m = db.query(models.Membership).filter_by(organization_id=org_id, user_id=target_user_id).first()
     if not m:
         raise HTTPException(404, "Anggota tidak ditemukan di organisasi ini")
@@ -287,9 +296,12 @@ def remove_member(target_org_id: int, target_user_id: int,
                   user=Depends(get_current_user), org_id=Depends(get_current_org), db=Depends(get_db)):
     if target_org_id != org_id:
         raise HTTPException(403, "Akses ke organisasi lain ditolak")
+    require_org_role(db, org_id, user)
     m = db.query(models.Membership).filter_by(organization_id=org_id, user_id=target_user_id).first()
     if not m:
         raise HTTPException(404, "Anggota tidak ditemukan di organisasi ini")
+    if target_user_id == user.id:
+        raise HTTPException(409, "Owner/admin tidak dapat menghapus keanggotaannya sendiri")
     db.delete(m)
     log_audit(db, org_id, user.id, "MEMBER_REMOVED", "organization_members", target_user_id)
     db.commit()
@@ -310,11 +322,14 @@ def list_accounts(org_id=Depends(get_current_org), db=Depends(get_db)):
 @app.post("/api/v1/accounts", status_code=201)
 def create_account(p: schemas.AccountCreate, user=Depends(get_current_user),
                    org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
     if db.query(models.Account).filter_by(organization_id=org_id, code=p.code).first():
         raise HTTPException(409, f"Akun dengan kode '{p.code}' sudah ada")
     a = models.Account(organization_id=org_id, **p.model_dump())
-    db.add(a); db.commit(); db.refresh(a)
+    db.add(a)
+    db.flush()
     log_audit(db, org_id, user.id, "ACCOUNT_CREATED", "accounts", a.id, {"code": a.code, "name": a.name})
+    db.commit(); db.refresh(a)
     return {"id": a.id, "code": a.code, "name": a.name, "account_type": a.account_type}
 
 @app.get("/api/v1/accounts/{account_id}")
@@ -327,6 +342,7 @@ def get_account(account_id: int, org_id=Depends(get_current_org), db=Depends(get
 @app.patch("/api/v1/accounts/{account_id}")
 def update_account(account_id: int, p: schemas.AccountUpdate, user=Depends(get_current_user),
                    org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
     a = db.query(models.Account).filter_by(id=account_id, organization_id=org_id).first()
     if not a:
         raise HTTPException(404, "Akun tidak ditemukan")
@@ -334,19 +350,20 @@ def update_account(account_id: int, p: schemas.AccountUpdate, user=Depends(get_c
     if p.account_type is not None: a.account_type = p.account_type
     if p.normal_balance is not None: a.normal_balance = p.normal_balance
     if p.is_active is not None: a.is_active = p.is_active
-    db.commit(); db.refresh(a)
     log_audit(db, org_id, user.id, "ACCOUNT_UPDATED", "accounts", a.id, p.model_dump(exclude_unset=True))
+    db.commit(); db.refresh(a)
     return {"id": a.id, "code": a.code, "name": a.name, "is_active": a.is_active}
 
 @app.delete("/api/v1/accounts/{account_id}")
 def delete_account(account_id: int, user=Depends(get_current_user),
                    org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
     a = db.query(models.Account).filter_by(id=account_id, organization_id=org_id).first()
     if not a:
         raise HTTPException(404, "Akun tidak ditemukan")
     a.is_active = False  # Soft deactivate to protect accounting integrity
-    db.commit()
     log_audit(db, org_id, user.id, "ACCOUNT_DEACTIVATED", "accounts", a.id)
+    db.commit()
     return {"message": "Akun dinonaktifkan"}
 
 # ==========================================
@@ -360,29 +377,34 @@ def categories(org_id=Depends(get_current_org), db=Depends(get_db)):
 @app.post("/api/v1/categories", status_code=201)
 def create_category(p: schemas.CategoryCreate, user=Depends(get_current_user),
                     org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
     if db.query(models.Category).filter_by(organization_id=org_id, name=p.name, tx_type=p.tx_type).first():
         raise HTTPException(409, "Kategori dengan nama dan tipe tersebut sudah ada")
     c = models.Category(organization_id=org_id, **p.model_dump())
-    db.add(c); db.commit(); db.refresh(c)
+    db.add(c)
+    db.flush()
     log_audit(db, org_id, user.id, "CATEGORY_CREATED", "categories", c.id, {"name": c.name})
+    db.commit(); db.refresh(c)
     return {"id": c.id, "name": c.name, "tx_type": c.tx_type, "account_id": c.account_id}
 
 @app.patch("/api/v1/categories/{cat_id}")
 def update_category(cat_id: int, p: schemas.CategoryUpdate, user=Depends(get_current_user),
                     org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
     c = db.query(models.Category).filter_by(id=cat_id, organization_id=org_id).first()
     if not c:
         raise HTTPException(404, "Kategori tidak ditemukan")
     if p.name is not None: c.name = p.name
     if p.tx_type is not None: c.tx_type = p.tx_type
     if p.account_id is not None: c.account_id = p.account_id
-    db.commit(); db.refresh(c)
     log_audit(db, org_id, user.id, "CATEGORY_UPDATED", "categories", c.id, p.model_dump(exclude_unset=True))
+    db.commit(); db.refresh(c)
     return {"id": c.id, "name": c.name, "tx_type": c.tx_type, "account_id": c.account_id}
 
 @app.delete("/api/v1/categories/{cat_id}")
 def delete_category(cat_id: int, user=Depends(get_current_user),
                     org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
     c = db.query(models.Category).filter_by(id=cat_id, organization_id=org_id).first()
     if not c:
         raise HTTPException(404, "Kategori tidak ditemukan")
@@ -390,8 +412,8 @@ def delete_category(cat_id: int, user=Depends(get_current_user),
     if in_use:
         raise HTTPException(409, "Kategori masih digunakan dalam transaksi tercatat dan tidak dapat dihapus")
     db.delete(c)
-    db.commit()
     log_audit(db, org_id, user.id, "CATEGORY_DELETED", "categories", cat_id)
+    db.commit()
     return {"message": "Kategori berhasil dihapus"}
 
 # ==========================================
@@ -406,6 +428,8 @@ def tx_dict(t):
 @app.post("/api/v1/transactions", status_code=201)
 def create_tx(p: schemas.TransactionIn, user=Depends(get_current_user),
               org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
+    _ensure_period_open(db, org_id, p.transaction_date, "membuat transaksi")
     if p.category_id is not None:
         cat = db.query(models.Category).filter_by(id=p.category_id, organization_id=org_id).first()
         if not cat:
@@ -413,8 +437,10 @@ def create_tx(p: schemas.TransactionIn, user=Depends(get_current_user),
         if cat.tx_type != p.tx_type:
             raise HTTPException(422, "Tipe kategori tidak cocok dengan tipe transaksi")
     t = models.Transaction(organization_id=org_id, created_by=user.id, **p.model_dump())
-    db.add(t); db.commit(); db.refresh(t)
+    db.add(t)
+    db.flush()
     log_audit(db, org_id, user.id, "TRANSACTION_CREATED", "transactions", t.id, {"amount": money(t.amount)})
+    db.commit(); db.refresh(t)
     return tx_dict(t)
 
 @app.get("/api/v1/transactions")
@@ -462,12 +488,15 @@ def get_tx(tx_id: int, org_id=Depends(get_current_org), db=Depends(get_db)):
 @app.patch("/api/v1/transactions/{tx_id}")
 def update_tx(tx_id: int, p: schemas.TransactionUpdate,
               user=Depends(get_current_user), org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
     t = db.query(models.Transaction).filter_by(id=tx_id, organization_id=org_id).first()
     if not t:
         raise HTTPException(404, "Transaksi tidak ditemukan")
     if t.status == "reversed" or t.reversal_of_id is not None:
         raise HTTPException(409, "Transaksi yang sudah di-reverse atau baris reversal tidak dapat diubah")
 
+    target_date = p.transaction_date or t.transaction_date
+    _ensure_period_open(db, org_id, target_date, "mengubah transaksi")
     target_type = p.tx_type or t.tx_type
     target_category_id = p.category_id if p.category_id is not None else t.category_id
 
@@ -492,11 +521,13 @@ def update_tx(tx_id: int, p: schemas.TransactionUpdate,
 @app.post("/api/v1/transactions/{tx_id}/reverse", status_code=201)
 def reverse_tx(tx_id: int, user=Depends(get_current_user),
                org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
     t = db.query(models.Transaction).filter_by(id=tx_id, organization_id=org_id).first()
     if not t:
         raise HTTPException(404, "Transaksi tidak ditemukan")
     if t.status != "posted" or t.reversal_of_id is not None:
         raise HTTPException(409, "Sudah di-reverse atau merupakan baris reversal")
+    _ensure_period_open(db, org_id, t.transaction_date, "membalik transaksi")
     rev = models.Transaction(organization_id=org_id, transaction_date=t.transaction_date,
         description=f"Reversal of #{t.id}", amount=t.amount, tx_type=t.tx_type,
         category_id=t.category_id, account_id=t.account_id, reversal_of_id=t.id, created_by=user.id)
@@ -533,22 +564,30 @@ def list_opening_balances(org_id=Depends(get_current_org), db=Depends(get_db)):
 @app.post("/api/v1/opening-balances", status_code=201)
 def create_opening_balance(p: schemas.OpeningBalanceCreate, user=Depends(get_current_user),
                            org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
+    _ensure_period_open(db, org_id, p.effective_date, "membuat saldo awal")
     acc = db.query(models.Account).filter_by(id=p.account_id, organization_id=org_id).first()
     if not acc:
         raise HTTPException(404, "Akun tidak ditemukan di organisasimu")
     ob = models.OpeningBalance(organization_id=org_id, created_by=user.id, **p.model_dump())
-    db.add(ob); db.commit(); db.refresh(ob)
+    db.add(ob)
+    db.flush()
     log_audit(db, org_id, user.id, "OPENING_BALANCE_SET", "opening_balances", ob.id, {"amount": money(ob.amount)})
+    db.commit(); db.refresh(ob)
     return {"id": ob.id, "account_id": ob.account_id, "amount": money(ob.amount), "effective_date": str(ob.effective_date)}
 
 @app.patch("/api/v1/opening-balances/{ob_id}")
 def update_opening_balance(ob_id: int, p: schemas.OpeningBalanceUpdate, user=Depends(get_current_user),
                            org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
     ob = db.query(models.OpeningBalance).filter_by(id=ob_id, organization_id=org_id).first()
     if not ob:
         raise HTTPException(404, "Saldo awal tidak ditemukan")
+    target_date = p.effective_date or ob.effective_date
+    _ensure_period_open(db, org_id, target_date, "mengubah saldo awal")
     if p.effective_date is not None: ob.effective_date = p.effective_date
     if p.amount is not None: ob.amount = p.amount
+    log_audit(db, org_id, user.id, "OPENING_BALANCE_UPDATED", "opening_balances", ob.id, {"amount": money(ob.amount)})
     db.commit(); db.refresh(ob)
     return {"id": ob.id, "account_id": ob.account_id, "amount": money(ob.amount), "effective_date": str(ob.effective_date)}
 
@@ -557,23 +596,28 @@ def update_opening_balance(ob_id: int, p: schemas.OpeningBalanceUpdate, user=Dep
 # ==========================================
 @app.get("/api/v1/financial/summary")
 def summary(date_from: date = Query(alias="from"), date_to: date = Query(alias="to"),
+            record_run: bool = Query(False),
             org_id=Depends(get_current_org), db=Depends(get_db)):
+    if date_from > date_to:
+        raise HTTPException(422, "Tanggal awal tidak boleh setelah tanggal akhir")
     rows = db.query(models.Transaction).filter(
         models.Transaction.organization_id == org_id,
         models.Transaction.transaction_date >= date_from,
         models.Transaction.transaction_date <= date_to).all()
     res = summarize(rows, date_from, date_to)
-    # Log calculation run
-    db.add(models.FinancialCalculationRun(
-        organization_id=org_id,
-        period_from=date_from,
-        period_to=date_to,
-        formula_version=res["formula_version"],
-        data_quality_status=res["data_quality"]["status"],
-        calculated_metrics={"net_revenue": res["metrics"]["net_revenue"]["value"], "surplus": res["metrics"]["simple_surplus"]["value"]},
-        warnings=res["data_quality"]["warnings"]
-    ))
-    db.commit()
+    # GET harus bebas side-effect. Calculation run hanya dicatat bila client
+    # secara eksplisit meminta lewat ?record_run=true.
+    if record_run:
+        db.add(models.FinancialCalculationRun(
+            organization_id=org_id,
+            period_from=date_from,
+            period_to=date_to,
+            formula_version=res["formula_version"],
+            data_quality_status=res["data_quality"]["status"],
+            calculated_metrics={"net_revenue": res["metrics"]["net_revenue"]["value"], "surplus": res["metrics"]["simple_surplus"]["value"]},
+            warnings=res["data_quality"]["warnings"]
+        ))
+        db.commit()
     return res
 
 @app.get("/api/v1/financial/profit-loss")
@@ -615,36 +659,50 @@ def list_risk_rules(db=Depends(get_db)):
     } for r in rules]
 
 @app.patch("/api/v1/risk-rules/{rule_code}")
-def update_risk_rule(rule_code: str, p: schemas.RiskRuleUpdate, user=Depends(get_current_user), db=Depends(get_db)):
+def update_risk_rule(rule_code: str, p: schemas.RiskRuleUpdate,
+                     user=Depends(get_current_user),
+                     org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
     r = db.query(models.RiskRuleVersion).filter_by(rule_code=rule_code).first()
     if not r:
         raise HTTPException(404, "Rule tidak ditemukan")
     if p.threshold_config is not None: r.threshold_config = p.threshold_config
     if p.is_active is not None: r.is_active = p.is_active
+    log_audit(db, org_id, user.id, "RISK_RULE_UPDATED", "risk_rules", r.id,
+              {"rule_code": rule_code, "is_active": r.is_active})
     db.commit(); db.refresh(r)
     return {"rule_code": r.rule_code, "threshold_config": r.threshold_config, "is_active": r.is_active}
 
 @app.get("/api/v1/financial/health")
 def financial_health(date_from: date = Query(alias="from"), date_to: date = Query(alias="to"),
+                     persist: bool = Query(False),
+                     user=Depends(get_current_user),
                      org_id=Depends(get_current_org), db=Depends(get_db)):
+    if date_from > date_to:
+        raise HTTPException(422, "Tanggal awal tidak boleh setelah tanggal akhir")
     rows = db.query(models.Transaction).filter(
         models.Transaction.organization_id == org_id,
         models.Transaction.transaction_date >= date_from,
         models.Transaction.transaction_date <= date_to).all()
     res = calculate_financial_health(rows, date_from, date_to)
-    # Save signals to risk_signals table
-    for s in res["signals"]:
-        db.add(models.RiskSignal(
-            organization_id=org_id,
-            rule_code=s["id"],
-            level=s["level"],
-            trigger_metric=s["trigger_metric"],
-            current_value=str(s["current_value"]) if s["current_value"] is not None else None,
-            threshold_value=str(s.get("threshold")) if s.get("threshold") is not None else None,
-            explanation=s["explanation"],
-            recommendation=s.get("recommendation")
-        ))
-    db.commit()
+    # GET tidak menulis histori secara implisit. Persistensi eksplisit hanya
+    # untuk pemanggil yang memang membutuhkan snapshot sinyal.
+    if persist:
+        require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
+        for s in res["signals"]:
+            db.add(models.RiskSignal(
+                organization_id=org_id,
+                rule_code=s["id"],
+                level=s["level"],
+                trigger_metric=s["trigger_metric"],
+                current_value=str(s["current_value"]) if s["current_value"] is not None else None,
+                threshold_value=str(s.get("threshold")) if s.get("threshold") is not None else None,
+                explanation=s["explanation"],
+                recommendation=s.get("recommendation")
+            ))
+        log_audit(db, org_id, user.id, "RISK_SIGNALS_PERSISTED", "risk_signals", None,
+                  {"from": str(date_from), "to": str(date_to), "count": len(res["signals"])})
+        db.commit()
     return res
 
 @app.get("/api/v1/financial/signals")
@@ -673,17 +731,25 @@ def get_balance_sheet(as_of: Optional[date] = Query(None),
 @app.get("/api/v1/ratios")
 def get_ratios(date_from: date = Query(alias="from"), date_to: date = Query(alias="to"),
                as_of: Optional[date] = Query(None),
+               persist: bool = Query(False),
+               user=Depends(get_current_user),
                org_id=Depends(get_current_org), db=Depends(get_db)):
     if date_from > date_to:
         raise HTTPException(422, "Tanggal awal tidak boleh setelah tanggal akhir")
     if as_of is not None and as_of < date_from:
         raise HTTPException(422, "Tanggal snapshot tidak boleh sebelum periode")
+    if persist:
+        require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
     profile = db.query(models.BusinessProfile).filter_by(organization_id=org_id).first()
     industry = profile.industry if profile else None
     result = ratio_service.compute_ratio_snapshot(
-        db, org_id, date_from, date_to, as_of=as_of, industry=industry, persist=True
+        db, org_id, date_from, date_to, as_of=as_of, industry=industry, persist=persist
     )
-    db.commit()
+    if persist:
+        log_audit(db, org_id, user.id, "RATIO_SNAPSHOT_PERSISTED", "ratio_snapshots",
+                  result.get("snapshot_id"),
+                  {"from": str(date_from), "to": str(date_to)})
+        db.commit()
     return result
 
 @app.get("/api/v1/ratios/thresholds")
@@ -744,6 +810,7 @@ def explain_ratio(ratio_code: str,
                   date_to: date = Query(alias="to"),
                   as_of: Optional[date] = Query(None),
                   org_id=Depends(get_current_org), db=Depends(get_db)):
+    """Generate AI-powered explanation untuk specific ratio menggunakan Gemini."""
     if ratio_code not in RATIO_META:
         raise HTTPException(404, "Kode rasio tidak dikenal")
     if date_from > date_to:
@@ -751,20 +818,42 @@ def explain_ratio(ratio_code: str,
     if as_of is not None and as_of < date_from:
         raise HTTPException(422, "Tanggal snapshot tidak boleh sebelum periode")
 
+    # Compute ratios dulu
     profile = db.query(models.BusinessProfile).filter_by(organization_id=org_id).first()
     result = ratio_service.compute_ratio_snapshot(
         db, org_id, date_from, date_to, as_of=as_of,
         industry=profile.industry if profile else None, persist=False,
     )
-    ratio = next(r for r in result["ratios"] if r["code"] == ratio_code)
-    direction = ratio["threshold"]["direction"] if ratio.get("threshold") else "higher"
-    narrative = ratio_narrative.explain_ratio(
-        ratio_code, ratio["band"], ratio["quality"], direction,
-        ratio.get("reason", ""),
+    
+    # Find target ratio
+    ratio = next((r for r in result["ratios"] if r["code"] == ratio_code), None)
+    if not ratio:
+        raise HTTPException(404, f"Rasio {ratio_code} tidak ditemukan dalam hasil perhitungan")
+    
+    # Generate AI explanation menggunakan LLM adapter
+    from .llm_adapter import generate_ratio_explanation
+    
+    threshold = ratio.get("threshold")
+    explanation = generate_ratio_explanation(
+        ratio_code=ratio["code"],
+        ratio_name=ratio["name"],
+        category=ratio["category"],
+        value=ratio["value"],
+        band=ratio["band"],
+        direction=threshold["direction"] if threshold else "higher",
+        data_quality=result["data_quality"]["status"],
+        target=threshold["target"] if threshold else None,
+        warning_threshold=threshold["warning"] if threshold else None,
+        critical_threshold=threshold["critical"] if threshold else None,
+        unit=ratio["unit"],
+        period=result["period"]
     )
+    
+    # Combine ratio data with explanation
     return {
         "ratio_code": ratio_code,
         "ratio_name": ratio["name"],
+        "category": ratio["category"],
         "period": result["period"],
         "as_of": result["as_of"],
         "band": ratio["band"],
@@ -772,8 +861,39 @@ def explain_ratio(ratio_code: str,
         "status": ratio["status"],
         "value": ratio["value"],
         "display": ratio["display"],
-        **narrative,
+        "threshold": ratio.get("threshold"),
+        "interpretation": ratio.get("interpretation"),
+        # AI-generated explanation
+        **explanation,
     }
+
+
+@app.get("/api/v1/ratio-insights")
+def get_ratio_insights(date_from: date = Query(alias="from"),
+                       date_to: date = Query(alias="to"),
+                       as_of: Optional[date] = Query(None),
+                       history: int = Query(12, ge=1, le=36),
+                       org_id=Depends(get_current_org), db=Depends(get_db)):
+    """Alert, proyeksi tren, dan rekomendasi tindakan berbasis rasio.
+
+    Deterministik: angka dari ratio engine, bukan dari LLM. Riwayat diambil dari
+    `ratio_snapshots` (hanya yang sudah dipersist). Jika riwayat kurang, status
+    predictive menjadi `insufficient` dengan alasan, bukan angka palsu.
+    """
+    if date_from > date_to:
+        raise HTTPException(422, "Tanggal awal tidak boleh setelah tanggal akhir")
+    if as_of is not None and as_of < date_from:
+        raise HTTPException(422, "Tanggal snapshot tidak boleh sebelum periode")
+
+    profile = db.query(models.BusinessProfile).filter_by(organization_id=org_id).first()
+    industry = profile.industry if profile else None
+    snapshot = ratio_service.compute_ratio_snapshot(
+        db, org_id, date_from, date_to, as_of=as_of,
+        industry=industry, persist=False,
+    )
+    hist = ratio_service.history_ratios(db, org_id, date_to, limit=history)
+    thresholds = ratio_service.effective_thresholds(db, org_id, industry)
+    return ratio_insights.build_insights(snapshot, hist, thresholds)
 
 
 # ==========================================
@@ -797,6 +917,17 @@ def _period_for_date(db, org_id: int, as_of: date):
         .order_by(models.AccountingPeriod.period_from.desc())
         .first()
     )
+
+
+def _ensure_period_open(db, org_id: int, as_of: date, action: str) -> None:
+    """Tolak write apa pun yang menyentuh periode akuntansi yang sudah ditutup."""
+    period = _period_for_date(db, org_id, as_of)
+    if period and period.status == "closed":
+        raise HTTPException(
+            409,
+            f"Periode {period.period_from} s/d {period.period_to} sudah ditutup; "
+            f"{action} tidak diizinkan. Buka kembali periode terlebih dahulu.",
+        )
 
 
 def _validate_snapshot_lines(db, org_id: int, lines):
@@ -978,7 +1109,7 @@ def update_balance_sheet(
         _replace_snapshot_lines(db, snapshot.id, p.lines)
     if p.status is not None:
         snapshot.status = p.status
-    if p.notes is not None:
+    if "notes" in p.model_fields_set:
         snapshot.notes = p.notes
     snapshot.period_id = period.id if period else snapshot.period_id
 
@@ -1151,6 +1282,7 @@ def create_receivable(
     db=Depends(get_db),
 ):
     require_org_role(db, org_id, user)
+    _ensure_period_open(db, org_id, p.invoice_date, "membuat piutang")
     if p.due_date < p.invoice_date:
         raise HTTPException(422, "Jatuh tempo tidak boleh sebelum tanggal invoice")
     if p.paid_amount > p.amount:
@@ -1193,6 +1325,9 @@ def update_receivable(
         raise HTTPException(404, "Piutang tidak ditemukan")
 
     data = p.model_dump(exclude_unset=True)
+    _ensure_period_open(
+        db, org_id, data.get("invoice_date", row.invoice_date), "mengubah piutang"
+    )
     for key, value in data.items():
         setattr(row, key, value)
     if row.due_date < row.invoice_date:
@@ -1259,6 +1394,7 @@ def create_payable(
     db=Depends(get_db),
 ):
     require_org_role(db, org_id, user)
+    _ensure_period_open(db, org_id, p.bill_date, "membuat utang")
     if p.due_date < p.bill_date:
         raise HTTPException(422, "Jatuh tempo tidak boleh sebelum tanggal tagihan")
     if p.paid_amount > p.amount:
@@ -1300,7 +1436,11 @@ def update_payable(
     if not row:
         raise HTTPException(404, "Utang tidak ditemukan")
 
-    for key, value in p.model_dump(exclude_unset=True).items():
+    updates = p.model_dump(exclude_unset=True)
+    _ensure_period_open(
+        db, org_id, updates.get("bill_date", row.bill_date), "mengubah utang"
+    )
+    for key, value in updates.items():
         setattr(row, key, value)
     if row.due_date < row.bill_date:
         raise HTTPException(422, "Jatuh tempo tidak boleh sebelum tanggal tagihan")
@@ -1396,7 +1536,17 @@ def update_inventory_item(
     ).first()
     if not row:
         raise HTTPException(404, "Item persediaan tidak ditemukan")
-    for key, value in p.model_dump(exclude_unset=True).items():
+    updates = p.model_dump(exclude_unset=True)
+    if "quantity_on_hand" in updates:
+        requested_qty = updates["quantity_on_hand"]
+        if requested_qty != row.quantity_on_hand:
+            raise HTTPException(
+                422,
+                "Stok tidak boleh diubah langsung melalui PATCH item. "
+                "Gunakan POST /api/v1/inventory-items/{id}/movements agar jejak mutasi tercatat.",
+            )
+        updates.pop("quantity_on_hand")
+    for key, value in updates.items():
         setattr(row, key, value)
     log_audit(
         db, org_id, user.id, "INVENTORY_ITEM_UPDATED", "inventory_items", row.id,
@@ -1447,6 +1597,7 @@ def create_inventory_movement(
     db=Depends(get_db),
 ):
     require_org_role(db, org_id, user)
+    _ensure_period_open(db, org_id, p.movement_date, "membuat mutasi persediaan")
     item = db.query(models.InventoryItem).filter_by(
         id=item_id, organization_id=org_id
     ).first()
@@ -1544,6 +1695,7 @@ def create_fixed_asset(
     db=Depends(get_db),
 ):
     require_org_role(db, org_id, user)
+    _ensure_period_open(db, org_id, p.acquisition_date, "membuat aset tetap")
     _validate_fixed_asset(p.acquisition_cost, p.accumulated_depreciation, p.salvage_value)
     row = models.FixedAsset(organization_id=org_id, **p.model_dump())
     db.add(row)
@@ -1571,7 +1723,12 @@ def update_fixed_asset(
     ).first()
     if not row:
         raise HTTPException(404, "Aset tetap tidak ditemukan")
-    for key, value in p.model_dump(exclude_unset=True).items():
+    updates = p.model_dump(exclude_unset=True)
+    _ensure_period_open(
+        db, org_id, updates.get("acquisition_date", row.acquisition_date),
+        "mengubah aset tetap",
+    )
+    for key, value in updates.items():
         setattr(row, key, value)
     _validate_fixed_asset(
         _decimal(row.acquisition_cost),
@@ -1634,6 +1791,7 @@ def create_loan(
     db=Depends(get_db),
 ):
     require_org_role(db, org_id, user)
+    _ensure_period_open(db, org_id, p.start_date, "membuat pinjaman")
     _validate_loan(p.principal, p.outstanding_principal)
     row = models.Loan(organization_id=org_id, **p.model_dump())
     db.add(row)
@@ -1661,7 +1819,11 @@ def update_loan(
     ).first()
     if not row:
         raise HTTPException(404, "Pinjaman tidak ditemukan")
-    for key, value in p.model_dump(exclude_unset=True).items():
+    updates = p.model_dump(exclude_unset=True)
+    _ensure_period_open(
+        db, org_id, updates.get("start_date", row.start_date), "mengubah pinjaman"
+    )
+    for key, value in updates.items():
         setattr(row, key, value)
     _validate_loan(_decimal(row.principal), _decimal(row.outstanding_principal))
     log_audit(
@@ -1679,7 +1841,13 @@ def update_loan(
 @app.post("/api/v1/forecasts/cash-flow", status_code=201)
 def create_forecast(p: schemas.ForecastCreate, user=Depends(get_current_user),
                     org_id=Depends(get_current_org), db=Depends(get_db)):
-    txs = db.query(models.Transaction).filter_by(organization_id=org_id, status="posted").all()
+    require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
+    txs = (
+        db.query(models.Transaction)
+        .filter_by(organization_id=org_id, status="posted")
+        .order_by(models.Transaction.transaction_date.asc())
+        .all()
+    )
     fc_res = calculate_cash_flow_forecast(txs, horizon=p.horizon, period_unit=p.period_unit)
 
     start_date = txs[0].transaction_date if txs else date.today()
@@ -1790,6 +1958,7 @@ def run_forecast_backtest(p: schemas.ForecastBacktestCreate, user=Depends(get_cu
     - Hasil disimpan ke tabel forecast_backtests untuk audit trail.
     - Sesuai FINANCIAL_AI_METHODOLOGY.md §7: gunakan rolling-origin, bukan random shuffle.
     """
+    require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
     txs = db.query(models.Transaction).filter_by(
         organization_id=org_id, status="posted"
     ).order_by(models.Transaction.transaction_date).all()
@@ -1841,44 +2010,82 @@ def run_forecast_backtest(p: schemas.ForecastBacktestCreate, user=Depends(get_cu
 # ==========================================
 @app.get("/api/v1/recommendations")
 def recommendations(date_from: date = Query(alias="from"), date_to: date = Query(alias="to"),
+                    persist: bool = Query(False),
+                    user=Depends(get_current_user),
                     org_id=Depends(get_current_org), db=Depends(get_db)):
+    if date_from > date_to:
+        raise HTTPException(422, "Tanggal awal tidak boleh setelah tanggal akhir")
     rows = db.query(models.Transaction).filter(
         models.Transaction.organization_id == org_id,
         models.Transaction.transaction_date >= date_from,
         models.Transaction.transaction_date <= date_to).all()
     res = generate_recommendations(rows, date_from, date_to)
-    # Persist recommendations to table if not existing
+    period_payload = {"from": str(date_from), "to": str(date_to)}
+    existing_rows = db.query(models.Recommendation).filter_by(
+        organization_id=org_id,
+        period_from=date_from,
+        period_to=date_to,
+    ).all()
+    existing_by_rule = {row.rule_id: row for row in existing_rows}
+
+    if persist:
+        # Menulis histori rekomendasi adalah operasi eksplisit, bukan efek
+        # samping GET biasa. Evidence lama tidak boleh dipakai ulang untuk
+        # periode lain; status/feedback pengguna tetap dipertahankan.
+        require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
+        for rec in res["recommendations"]:
+            row = existing_by_rule.get(rec["rule_id"])
+            if row is None:
+                row = models.Recommendation(
+                    organization_id=org_id,
+                    rule_id=rec["rule_id"],
+                    rule_version=rec["rule_version"],
+                    period_from=date_from,
+                    period_to=date_to,
+                    title=rec["title"],
+                    priority=rec["priority"],
+                    trigger_metrics=rec["trigger_metrics"],
+                    evidence=rec["evidence"],
+                    suggested_actions=rec["suggested_actions"],
+                    assumptions=rec["assumptions"],
+                    limitations=rec["limitations"],
+                    status=rec["status"],
+                )
+                db.add(row)
+                db.flush()
+                existing_by_rule[rec["rule_id"]] = row
+            else:
+                row.rule_version = rec["rule_version"]
+                row.title = rec["title"]
+                row.priority = rec["priority"]
+                row.trigger_metrics = rec["trigger_metrics"]
+                row.evidence = rec["evidence"]
+                row.suggested_actions = rec["suggested_actions"]
+                row.assumptions = rec["assumptions"]
+                row.limitations = rec["limitations"]
+                # status dan user_feedback sengaja dipertahankan.
+        log_audit(db, org_id, user.id, "RECOMMENDATIONS_PERSISTED", "recommendations", None,
+                  {"from": str(date_from), "to": str(date_to),
+                   "count": len(res["recommendations"])})
+        db.commit()
+
     for rec in res["recommendations"]:
-        exists = db.query(models.Recommendation).filter_by(organization_id=org_id, rule_id=rec["rule_id"], title=rec["title"]).first()
-        if not exists:
-            db.add(models.Recommendation(
-                organization_id=org_id,
-                rule_id=rec["rule_id"],
-                rule_version=rec["rule_version"],
-                title=rec["title"],
-                priority=rec["priority"],
-                trigger_metrics=rec["trigger_metrics"],
-                evidence=rec["evidence"],
-                suggested_actions=rec["suggested_actions"],
-                assumptions=rec["assumptions"],
-                limitations=rec["limitations"],
-                status=rec["status"]
-            ))
-    db.commit()
-    # Read persisted recommendations with their IDs
-    db_recs = db.query(models.Recommendation).filter_by(organization_id=org_id).order_by(models.Recommendation.id.desc()).all()
-    res["recommendations"] = [{
-        "id": str(r.id), "rule_id": r.rule_id, "rule_version": r.rule_version,
-        "title": r.title, "priority": r.priority, "trigger_metrics": r.trigger_metrics,
-        "evidence": r.evidence, "suggested_actions": r.suggested_actions,
-        "assumptions": r.assumptions, "limitations": r.limitations,
-        "status": r.status, "user_feedback": r.user_feedback, "created_at": str(r.created_at)
-    } for r in db_recs]
+        row = existing_by_rule.get(rec["rule_id"])
+        rec["id"] = str(row.id) if row is not None else None
+        rec["period"] = period_payload
+        if row is not None:
+            rec["status"] = row.status
+            rec["user_feedback"] = row.user_feedback
+        else:
+            rec["user_feedback"] = None
+    res["period"] = period_payload
+    res["persisted"] = persist
     return res
 
 @app.patch("/api/v1/recommendations/{rec_id}")
 def update_recommendation(rec_id: int, p: schemas.RecommendationUpdate, user=Depends(get_current_user),
                           org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
     r = db.query(models.Recommendation).filter_by(id=rec_id, organization_id=org_id).first()
     if not r:
         raise HTTPException(404, "Rekomendasi tidak ditemukan")
@@ -1915,16 +2122,26 @@ def explain_recommendation(rec_id: int, user=Depends(get_current_user),
     result = generate_explanation(rec_payload)
 
     log_audit(db, org_id, user.id, "RECOMMENDATION_EXPLAINED", "recommendations", r.id,
-              {"source": result["source"], "llm_enabled": result["llm_enabled"]})
+              {
+                  "source": result["source"],
+                  "llm_enabled": result["llm_enabled"],
+                  "llm_available": result.get("llm_available", False),
+              })
     db.commit()
 
     return {
         "recommendation_id": rec_id,
         "rule_id": r.rule_id,
         "title": r.title,
+        "period": {
+            "from": str(r.period_from) if r.period_from else None,
+            "to": str(r.period_to) if r.period_to else None,
+        },
         "explanation": result["explanation"],
         "source": result["source"],
         "llm_enabled": result["llm_enabled"],
+        "llm_available": result.get("llm_available", False),
+        "fallback_reason": result.get("fallback_reason"),
         "privacy_note": result["privacy_note"],
         "disclaimer": (
             "Penjelasan ini dihasilkan secara otomatis dan bersifat informatif. "
@@ -1964,7 +2181,7 @@ def get_import_batch(batch_id: int, org_id=Depends(get_current_org), db=Depends(
 @app.post("/api/v1/imports/transactions/preview")
 async def preview_csv_import(file: UploadFile = File(...), user=Depends(get_current_user),
                              org_id=Depends(get_current_org), db=Depends(get_db)):
-    require_org_role(db, org_id, user)
+    require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
     filename = file.filename or ""
     if not filename.lower().endswith(".csv"):
         raise HTTPException(400, "File harus berformat CSV")
@@ -2036,8 +2253,14 @@ async def preview_csv_import(file: UploadFile = File(...), user=Depends(get_curr
 
         try:
             amt = Decimal(amt_str)
+            if not amt.is_finite():
+                add_error(idx, row_clean, "amount", "Nominal harus berupa angka finite")
+                continue
             if amt <= 0:
                 add_error(idx, row_clean, "amount", "Nominal harus lebih dari 0")
+                continue
+            if amt > Decimal("9999999999999999.99"):
+                add_error(idx, row_clean, "amount", "Nominal melebihi batas yang didukung")
                 continue
         except Exception:
             add_error(idx, row_clean, "amount", f"Nominal '{amt_str}' tidak valid")
@@ -2120,7 +2343,7 @@ async def preview_csv_import(file: UploadFile = File(...), user=Depends(get_curr
 @app.post("/api/v1/imports/transactions/confirm", status_code=201)
 def confirm_csv_import(p: schemas.ImportConfirmIn, user=Depends(get_current_user),
                        org_id=Depends(get_current_org), db=Depends(get_db)):
-    require_org_role(db, org_id, user)
+    require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
     batch = db.query(models.ImportBatch).filter_by(
         id=p.batch_id, organization_id=org_id
     ).first()
@@ -2128,6 +2351,12 @@ def confirm_csv_import(p: schemas.ImportConfirmIn, user=Depends(get_current_user
         raise HTTPException(404, "Import batch tidak ditemukan")
     if batch.status != "preview":
         raise HTTPException(409, "Batch ini sudah diproses atau tidak dapat dikonfirmasi")
+    if p.transactions is not None:
+        raise HTTPException(
+            422,
+            "Field 'transactions' tidak didukung. Konfirmasi import menggunakan "
+            "batch_id agar baris yang diproses selalu sama dengan hasil preview.",
+        )
 
     rows = (
         db.query(models.ImportRow)
@@ -2161,6 +2390,8 @@ def confirm_csv_import(p: schemas.ImportConfirmIn, user=Depends(get_current_user
         except Exception:
             skipped += 1
             continue
+
+        _ensure_period_open(db, org_id, item.transaction_date, "mengimpor transaksi")
 
         key = (
             str(item.transaction_date),

@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { DataQualityBadge } from "@/components/shared/DataQualityBadge";
 import { getErrorMessage } from "@/lib/api-client";
+import { toast } from "@/lib/toast";
 import {
   getDateRangeForRatioPeriod,
   formatDateForDisplay,
@@ -15,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { BalanceSheetPanel } from "@/features/ratios/components/BalanceSheetPanel";
+import { InsightPanel } from "@/features/ratios/components/InsightPanel";
 import { RatioCard } from "@/features/ratios/components/RatioCard";
 import { RatioSummary } from "@/features/ratios/components/RatioSummary";
 import {
@@ -25,6 +27,7 @@ import {
 import {
   useBalanceSheet,
   useExplainRatio,
+  useRatioInsights,
   useRatios,
 } from "@/features/ratios/hooks/use-ratios";
 import type { RatioExplainResponse } from "@/types/ratios";
@@ -51,6 +54,7 @@ export default function RatiosPage() {
 
   const ratiosQuery = useRatios(queryParams);
   const balanceQuery = useBalanceSheet(range.as_of);
+  const insightsQuery = useRatioInsights(queryParams);
   const explainMutation = useExplainRatio(queryParams);
 
   const [explanationsByPeriod, setExplanationsByPeriod] = useState<
@@ -64,8 +68,30 @@ export default function RatiosPage() {
   const explainError = explainErrors[periodKey] ?? "";
 
   const data = ratiosQuery.data;
+  const insights = insightsQuery.data;
   const warnings = data?.data_quality.warnings ?? [];
-  const isRefreshing = ratiosQuery.isFetching || balanceQuery.isFetching;
+  const isRefreshing =
+    ratiosQuery.isFetching ||
+    balanceQuery.isFetching ||
+    insightsQuery.isFetching;
+
+  // Tampilkan notifikasi sekali per periode + kode alert. Ref mencegah toast
+  // berulang ketika query di-refetch atau komponen re-render.
+  const notifiedAlertsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const alerts = insights?.alerts ?? [];
+    alerts.forEach((alert) => {
+      const key = `${periodKey}:${alert.code}`;
+      if (notifiedAlertsRef.current.has(key)) return;
+      notifiedAlertsRef.current.add(key);
+      toast.show({
+        title: alert.title,
+        message: alert.message,
+        variant: alert.level === "critical" ? "error" : "warning",
+        duration: 8000,
+      });
+    });
+  }, [insights, periodKey]);
 
   const handleExplain = (code: string) => {
     setExplainErrors((previous) => ({ ...previous, [periodKey]: "" }));
@@ -91,6 +117,7 @@ export default function RatiosPage() {
   const handleRefresh = () => {
     void ratiosQuery.refetch();
     void balanceQuery.refetch();
+    void insightsQuery.refetch();
   };
 
   return (
@@ -210,6 +237,17 @@ export default function RatiosPage() {
       {data && (
         <>
           <RatioSummary ratios={data.ratios} />
+
+          <InsightPanel
+            insights={insights}
+            isLoading={insightsQuery.isLoading}
+            error={
+              insightsQuery.error
+                ? getErrorMessage(insightsQuery.error)
+                : undefined
+            }
+            onRetry={() => void insightsQuery.refetch()}
+          />
 
           {warnings.length > 0 && (
             <Alert

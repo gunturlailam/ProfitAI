@@ -217,3 +217,53 @@ def test_ratio_threshold_requires_owner_or_admin(client, db_session, org_a_setup
         json={"target": "3", "warning": "2", "critical": "1", "direction": "higher"},
     )
     assert res.status_code == 403
+
+
+def test_ratio_insights_endpoint_handles_missing_snapshot(client, org_a_setup):
+    headers = org_a_setup["headers"]
+    res = client.get(
+        "/api/v1/ratio-insights?from=2026-10-01&to=2026-10-31", headers=headers
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["alerts"] == []
+    assert body["prescriptive"] == []
+    assert body["predictive"]["series"]
+    assert all(
+        entry["status"] == "insufficient" for entry in body["predictive"]["series"]
+    )
+
+
+def test_ratio_insights_endpoint_returns_three_pillars(client, db_session, org_a_setup):
+    _seed_balance_sheet(db_session, org_a_setup)
+    _seed_october_transactions(db_session, org_a_setup)
+
+    res = client.get(
+        "/api/v1/ratio-insights?from=2026-10-01&to=2026-10-31&as_of=2026-10-31",
+        headers=org_a_setup["headers"],
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["formula_version"] == "1.1.0"
+    assert body["rules_version"]
+    assert "alerts" in body and "predictive" in body and "prescriptive" in body
+    assert body["predictive"]["series"]
+    assert body["period"]["from"] == "2026-10-01"
+
+
+def test_ratio_insights_validates_dates_and_auth(client, org_a_setup):
+    headers = org_a_setup["headers"]
+
+    reversed_range = client.get(
+        "/api/v1/ratio-insights?from=2026-10-31&to=2026-10-01", headers=headers
+    )
+    assert reversed_range.status_code == 422
+
+    snapshot_before_period = client.get(
+        "/api/v1/ratio-insights?from=2026-10-01&to=2026-10-31&as_of=2026-09-30",
+        headers=headers,
+    )
+    assert snapshot_before_period.status_code == 422
+
+    unauthenticated = client.get("/api/v1/ratio-insights?from=2026-10-01&to=2026-10-31")
+    assert unauthenticated.status_code == 401

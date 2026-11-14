@@ -7,7 +7,7 @@ Deliver understandable report and insight experiences using the shared frontend 
 - Report and financial detail UX.
 - Risk signal, forecast, and recommendation feature interfaces.
 - Frontend integration/quality for assigned modules.
-- Responsive and interaction QA across the application.
+- Responsive and interact   ion QA across the application.
 
 ## Phase 0 tasks
 - [ ] Audit current frontend and understand framework/routes.

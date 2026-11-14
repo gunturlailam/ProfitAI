@@ -203,6 +203,8 @@ class Recommendation(Base):
     calculation_run_id = Column(Integer, ForeignKey("financial_calculation_runs.id", ondelete="SET NULL"), nullable=True)
     rule_id = Column(Text, nullable=False)
     rule_version = Column(Text, nullable=False)
+    period_from = Column(Date, nullable=True)
+    period_to = Column(Date, nullable=True)
     title = Column(Text, nullable=False)
     priority = Column(Text, nullable=False)  # low, medium, high
     trigger_metrics = Column(JSON, nullable=True)
@@ -213,6 +215,9 @@ class Recommendation(Base):
     status = Column(Text, nullable=False, default="active")  # active, reviewed, dismissed
     user_feedback = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        Index("idx_recommendation_org_period", "organization_id", "period_from", "period_to"),
+    )
 
 # 17. forecast_backtests: walk-forward validation results and gate status
 class ForecastBacktest(Base):

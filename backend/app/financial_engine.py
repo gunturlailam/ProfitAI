@@ -102,12 +102,16 @@ def calculate_profit_loss(transactions, period_from, period_to, currency="IDR"):
     sales_discounts = ZERO
     net_revenue = agg["net_revenue"]
     operating_expenses = agg["expense"]
-    net_profit = agg["surplus"]  # Sesuai basis simple surplus MVP
+    simple_surplus = net_revenue - operating_expenses
+    net_profit_reason = (
+        "COGS belum diklasifikasikan; laba bersih belum dapat dihitung"
+    )
+    net_profit = unavailable(net_profit_reason)
+    net_margin = unavailable(net_profit_reason)
 
-    net_margin = (
-        unavailable("Net revenue nol, margin tidak dapat dihitung")
-        if net_revenue == ZERO
-        else {"value": float(round((net_profit / net_revenue) * 100, 2)), "status": "available"}
+    warnings = list(agg["warnings"])
+    warnings.append(
+        "COGS belum diklasifikasikan; laba kotor dan laba bersih belum dapat dihitung."
     )
 
     return {
@@ -115,7 +119,7 @@ def calculate_profit_loss(transactions, period_from, period_to, currency="IDR"):
         "currency": currency,
         "data_quality": {
             "status": agg["quality_status"],
-            "warnings": agg["warnings"]
+            "warnings": warnings
         },
         "formula_version": FORMULA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -127,15 +131,17 @@ def calculate_profit_loss(transactions, period_from, period_to, currency="IDR"):
             "cogs": unavailable("COGS belum diklasifikasikan terpisah"),
             "gross_profit": unavailable("COGS belum diklasifikasikan terpisah"),
             "operating_expenses": metric(operating_expenses),
-            "operating_profit": metric(net_revenue - operating_expenses),
+            # Ini surplus sederhana (pendapatan - seluruh beban), bukan laba
+            # operasional formal. UI wajib memberi label estimasi.
+            "operating_profit": metric(simple_surplus),
             "other_income": unavailable("Belum ada pencatatan pendapatan lain"),
             "finance_cost": unavailable("Belum ada pencatatan biaya keuangan"),
             "tax_expense": unavailable("Belum ada pencatatan pajak"),
-            "net_profit": metric(net_profit),
+            "net_profit": net_profit,
         },
         "ratios": {
             "gross_margin": unavailable("Gross profit belum tersedia"),
-            "operating_margin": net_margin,
+            "operating_margin": unavailable("Laba operasional formal belum tersedia"),
             "net_margin": net_margin,
         }
     }

@@ -2,9 +2,14 @@
 
 import { useState, useMemo } from "react";
 import { KPICard } from "@/components/dashboard/KPICard";
+import { AIInsightsPanel } from "@/components/dashboard/AIInsightsPanel";
+import { PredictiveInsightsPanel } from "@/components/dashboard/PredictiveInsightsPanel";
+import { AlertHistoryPanel } from "@/components/dashboard/AlertHistoryPanel";
 import { useFinancialSummary } from "@/hooks/use-financial-summary";
 import { useFinancialHealth } from "@/features/insights/hooks/use-financial-health";
 import { useTransactions } from "@/hooks/use-transactions";
+import { useRatioInsights } from "@/hooks/use-ratio-insights";
+import { useAutoAlerts } from "@/hooks/use-auto-alerts";
 import { getDateRangeForPeriod, type PeriodType } from "@/lib/date-utils";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -16,7 +21,7 @@ import {
   AlertCircle,
   ArrowRight,
   Brain,
-  Zap,
+  CheckCircle2,
   Clock,
 } from "lucide-react";
 import Link from "next/link";
@@ -30,6 +35,32 @@ interface RecentTransaction {
   tx_type: string;
 }
 
+function riskLevelLabel(level: string) {
+  switch (level) {
+    case "critical":
+      return "Kritis";
+    case "attention":
+      return "Perhatian";
+    case "normal":
+      return "Normal";
+    default:
+      return "Data Minim";
+  }
+}
+
+function riskLevelClasses(level: string) {
+  switch (level) {
+    case "critical":
+      return "text-red-600 bg-red-50 border-red-200";
+    case "attention":
+      return "text-amber-700 bg-amber-50 border-amber-200";
+    case "normal":
+      return "text-emerald-700 bg-emerald-50 border-emerald-200";
+    default:
+      return "text-gray-600 bg-gray-50 border-gray-200";
+  }
+}
+
 export default function DashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("MTD");
 
@@ -41,6 +72,19 @@ export default function DashboardPage() {
     limit: 3,
     from_date: dateRange.from,
     to_date: dateRange.to,
+  });
+
+  // Auto-load ratio insights for critical alerts
+  const { insights: ratioInsights } = useRatioInsights({
+    dateFrom: dateRange.from,
+    dateTo: dateRange.to,
+    autoFetch: true,
+  });
+
+  // Auto-trigger toast notifications for critical ratios
+  useAutoAlerts({
+    ratios: ratioInsights,
+    enabled: !isLoading && ratioInsights.length > 0,
   });
 
   const recent = recentTransactions as RecentTransaction[];
@@ -142,7 +186,7 @@ export default function DashboardPage() {
           </div>
           <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#e8f5e9] text-[#2e7d32] text-xs font-bold rounded-lg border border-[#c8e6c9] whitespace-nowrap">
             <span className="w-2 h-2 bg-[#2e7d32] rounded-full flex-shrink-0"></span>
-            <span>Data Depot Dieperbarui</span>
+            <span>Data periode ini</span>
           </span>
         </div>
       </div>
@@ -183,10 +227,7 @@ export default function DashboardPage() {
 
         <KPICard
           title="Laba Bersih"
-          value={
-            data.metrics.simple_surplus ??
-            data.metrics.net_profit
-          }
+          value={data.metrics.net_profit}
           currency={data.currency}
           icon={<TrendingUp className="w-5 h-5 text-white" strokeWidth={2.5} />}
           iconBg="bg-[#1f1f1f]"
@@ -207,69 +248,73 @@ export default function DashboardPage() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* AI Intelligence Panel */}
-        <section className="lg:col-span-8 bg-[#1a1a1a] text-white rounded-2xl p-7 relative overflow-hidden shadow-md">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#ffc900]/10 rounded-full blur-3xl -z-0"></div>
-          
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ffc900]/20 border border-[#ffc900]/40 mb-4">
-              <Brain className="w-3.5 h-3.5 text-[#ffc900]" strokeWidth={2.5} />
-              <span className="text-xs font-bold text-[#ffc900] uppercase tracking-wide">
-                ProfitAI Intelligence
-              </span>
+        {/* Deterministic Risk Signals Panel */}
+        <section className="lg:col-span-8 bg-white rounded-2xl p-7 border border-[#e5e5e5] shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f5f5f5] border border-[#e5e5e5] mb-4">
+                <Brain className="w-3.5 h-3.5 text-[#666666]" strokeWidth={2.5} />
+                <span className="text-xs font-bold text-[#666666] uppercase tracking-wide">
+                  Sinyal Risiko Deterministik
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold text-[#1f1f1f] mb-2 leading-tight">
+                Ringkasan Kesehatan Finansial
+              </h2>
+              <p className="text-sm text-[#666666] leading-relaxed max-w-2xl">
+                Dihitung oleh rule engine backend dari transaksi periode ini. Panel ini
+                menampilkan sinyal apa adanya, bukan narasi AI generatif.
+              </p>
             </div>
-
-            <h2 className="text-3xl font-bold text-white mb-2.5 leading-tight">
-              Analisis Keuangan Cerdas
-            </h2>
-            <p className="text-sm text-[#d0d0d0] mb-5 leading-relaxed max-w-2xl">
-              Insight berbasis AI untuk optimalisasi performa bisnis Anda.
-            </p>
-
-            {/* AI Insights */}
-            <div className="space-y-3 mb-6">
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg bg-[#ffc900]/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Zap className="w-4 h-4 text-[#ffc900]" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-sm text-[#e0e0e0] leading-relaxed">
-                    Pengeluaran tahunan <span className="font-bold">+23,5%</span> dibanding bulan lalu.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg bg-[#ffc900]/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Zap className="w-4 h-4 text-[#ffc900]" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-sm text-[#e0e0e0] leading-relaxed">
-                    Margin laba untuk dikurangi karena & COGS nasar tangkah.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg bg-[#ffc900]/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Zap className="w-4 h-4 text-[#ffc900]" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-sm text-[#e0e0e0] leading-relaxed">
-                    Aset dalam konteks sehat dan managerial <span className="font-bold">+8,6%</span>.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <Link
-              href="/insights"
-              className="inline-flex items-center gap-2 bg-[#ffc900] text-[#1f1f1f] px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-[#f0bd00] transition-all shadow-lg hover:shadow-xl"
-            >
-              <span>Lihat Analisis Lengkap</span>
-              <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
-            </Link>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold whitespace-nowrap ${riskLevelClasses(healthLevel)}`}>
+              <span className="w-2 h-2 rounded-full bg-current" />
+              {healthLabel}
+            </span>
           </div>
+
+          <div className="space-y-3 mb-6">
+            {signals.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-[#e5e5e5] bg-[#fafaf9] p-4 text-sm text-[#666666]">
+                Belum ada sinyal risiko pada periode ini. Data yang belum lengkap
+                tidak dianggap sebagai kondisi normal.
+              </div>
+            ) : (
+              signals.slice(0, 3).map((signal) => (
+                <div
+                  key={signal.id}
+                  className="flex items-start gap-3 rounded-xl border border-[#e5e5e5] p-4"
+                >
+                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0 ${riskLevelClasses(signal.level)}`}>
+                    {signal.level === "normal" ? (
+                      <CheckCircle2 className="w-4 h-4" strokeWidth={2.5} />
+                    ) : (
+                      <AlertCircle className="w-4 h-4" strokeWidth={2.5} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <p className="text-sm font-bold text-[#1f1f1f]">{signal.title}</p>
+                      <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${riskLevelClasses(signal.level)}`}>
+                        {riskLevelLabel(signal.level)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#666666] leading-relaxed">{signal.explanation}</p>
+                    <p className="text-[11px] text-[#999999] mt-1">
+                      Pemicu: {signal.trigger_metric}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <Link
+            href="/insights"
+            className="inline-flex items-center gap-2 bg-[#ffc900] text-[#1f1f1f] px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-[#f0bd00] transition-all shadow-sm"
+          >
+            <span>Lihat Semua Sinyal</span>
+            <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+          </Link>
         </section>
 
         {/* Financial Health Sidebar */}
@@ -284,7 +329,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-4 mb-5">
-              <div className={`w-24 h-24 flex-shrink-0 rounded-full border-4 flex items-center justify-center text-center font-bold text-2xl ${
+              <div className={`w-24 h-24 flex-shrink-0 rounded-full border-4 flex items-center justify-center text-center font-bold text-lg px-2 ${
                 healthLevel === "critical"
                   ? "border-red-300 bg-red-50 text-red-600"
                   : healthLevel === "attention"
@@ -293,38 +338,57 @@ export default function DashboardPage() {
                       ? "border-emerald-300 bg-emerald-50 text-emerald-600"
                       : "border-gray-300 bg-gray-50 text-gray-600"
               }`}>
-                {healthLevel === "normal" ? "85%" : healthLabel}
+                {healthLabel}
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-bold text-[#1f1f1f] mb-0.5">
-                  {healthLevel === "normal" ? "Sangat Baik" : healthLabel}
+                  {healthLabel}
                 </h4>
                 <p className="text-xs text-[#666666] leading-relaxed">{healthDescription}</p>
               </div>
             </div>
 
-            {/* Indicators */}
+            {/* Indicators from backend signals */}
             <div className="space-y-2.5 border-t border-[#e5e5e5] pt-4">
-              {[
-                { label: "Likuiditas", status: "Baik" },
-                { label: "Profitabilitas", status: "Baik" },
-                { label: "Aras Kas", status: "Sangat Baik" },
-                { label: "Efisiensi Operasional", status: "Baik" },
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <span className="text-xs text-[#666666]">{item.label}</span>
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-[#2e7d32]">
-                    <span className="w-2 h-2 bg-[#2e7d32] rounded-full"></span>
-                    {item.status}
-                  </span>
-                </div>
-              ))}
+              {signals.length === 0 ? (
+                <p className="text-xs text-[#999999]">
+                  Tidak ada indikator yang dapat ditampilkan.
+                </p>
+              ) : (
+                signals.slice(0, 4).map((signal) => (
+                  <div key={signal.id} className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-[#666666] truncate">{signal.title}</span>
+                    <span className={`inline-flex items-center gap-1 text-xs font-bold whitespace-nowrap ${riskLevelClasses(signal.level)} border-0 bg-transparent px-0`}>
+                      <span className="w-2 h-2 rounded-full bg-current"></span>
+                      {riskLevelLabel(signal.level)}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </aside>
       </div>
 
-      {/* Bottom Section: Recent Activity */}
+      {/* AI Insights Panel */}
+      <AIInsightsPanel 
+        initialDateFrom={dateRange.from}
+        initialDateTo={dateRange.to}
+      />
+
+      {/* Predictive Insights Panel */}
+      <PredictiveInsightsPanel
+        dateFrom={dateRange.from}
+        dateTo={dateRange.to}
+      />
+
+      {/* Alert History Panel */}
+      <AlertHistoryPanel
+        dateFrom={dateRange.from}
+        dateTo={dateRange.to}
+      />
+
+      {/* Recent Activity */}
       <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5] shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
