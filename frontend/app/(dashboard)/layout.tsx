@@ -15,20 +15,26 @@ const API_BASE_URL =
 // place for the opt-out (Client Components cannot export `instant`).
 export const instant = false;
 
+// Temporarily disabled server-side auth check for demo
+// Token stored in sessionStorage (client-side) not accessible from server
+// Will be re-enabled when switching to httpOnly cookies
 async function verifyAuth() {
-  const token = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!token) {
-    redirect("/login");
-  }
+  // const token = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
+  // if (!token) {
+  //   redirect("/login");
+  // }
 
-  const response = await fetch(`${API_BASE_URL}/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  }).catch(() => null);
+  // const response = await fetch(`${API_BASE_URL}/me`, {
+  //   headers: { Authorization: `Bearer ${token}` },
+  //   cache: "no-store",
+  // }).catch(() => null);
 
-  if (!response?.ok) {
-    redirect("/login");
-  }
+  // if (!response?.ok) {
+  //   redirect("/login");
+  // }
+  
+  // For now, auth is handled client-side only
+  return;
 }
 
 export default async function DashboardLayout({
