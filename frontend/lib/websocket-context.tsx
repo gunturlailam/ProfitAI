@@ -166,11 +166,50 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   };
 
   useEffect(() => {
-    // Connect on mount
+    // Try initial connection
     connect();
+
+    // Listen for storage events (token added from another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "access_token" && e.newValue) {
+        console.log("[WebSocket] Token detected, attempting connection");
+        connect();
+      } else if (e.key === "access_token" && !e.newValue) {
+        // Token removed (logout)
+        if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+          setConnected(false);
+        }
+      }
+    };
+
+    // Custom event listener untuk token changes dalam same tab
+    const handleTokenChange = () => {
+      const token = localStorage.getItem("access_token");
+      if (token && !wsRef.current) {
+        console.log("[WebSocket] Token change detected, connecting");
+        connect();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("auth-token-changed", handleTokenChange);
+
+    // Poll untuk token availability (fallback jika event tidak fire)
+    const pollInterval = setInterval(() => {
+      const token = localStorage.getItem("access_token");
+      if (token && !wsRef.current) {
+        connect();
+        clearInterval(pollInterval); // Stop polling setelah connect
+      }
+    }, 1000);
 
     // Cleanup on unmount
     return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth-token-changed", handleTokenChange);
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }

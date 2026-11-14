@@ -62,6 +62,9 @@ export function saveAccessToken(token: string, remember: boolean): void {
     token,
     remember ? 60 * 60 * 24 * 30 : undefined,
   );
+
+  // Trigger custom event untuk WebSocket connection
+  window.dispatchEvent(new CustomEvent("auth-token-changed"));
 }
 
 export function clearAccessToken(): void {
