@@ -6,7 +6,6 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "@/components/ui/Toaster";
 import { WebSocketStatus } from "@/components/shared/WebSocketStatus";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth";
-import { AuthGuard } from "@/components/auth/AuthGuard";
 import { PathRoleGuard } from "@/components/auth/PathRoleGuard";
 
 const API_BASE_URL =
@@ -41,24 +40,22 @@ export default async function DashboardLayout({
   await verifyAuth();
 
   return (
-    <AuthGuard>
-      <PathRoleGuard>
-        <div className="min-h-screen bg-gray-50 flex">
-          <Suspense fallback={<div className="w-60 flex-shrink-0 bg-white border-r" />}>
-            <Sidebar />
+    <PathRoleGuard>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Suspense fallback={<div className="w-60 flex-shrink-0 bg-white border-r" />}>
+          <Sidebar />
+        </Suspense>
+        <main className="flex-1 flex flex-col px-6 py-4 overflow-y-auto">
+          <Suspense fallback={<div className="h-20" />}>
+            <Navbar />
           </Suspense>
-          <main className="flex-1 flex flex-col px-6 py-4 overflow-y-auto">
-            <Suspense fallback={<div className="h-20" />}>
-              <Navbar />
-            </Suspense>
-            <Suspense fallback={<div className="flex items-center justify-center flex-1"><div className="text-gray-400">Loading...</div></div>}>
-              {children}
-            </Suspense>
-          </main>
-          <Toaster />
-          <WebSocketStatus />
-        </div>
-      </PathRoleGuard>
-    </AuthGuard>
+          <Suspense fallback={<div className="flex items-center justify-center flex-1"><div className="text-gray-400">Loading...</div></div>}>
+            {children}
+          </Suspense>
+        </main>
+        <Toaster />
+        <WebSocketStatus />
+      </div>
+    </PathRoleGuard>
   );
 }
