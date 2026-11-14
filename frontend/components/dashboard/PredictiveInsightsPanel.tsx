@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, Activity, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { apiClient, getErrorMessage } from "@/lib/api-client";
 
 interface PredictiveSeries {
   code: string;
@@ -45,26 +46,16 @@ export function PredictiveInsightsPanel({
     setError(null);
 
     try {
-      const params = new URLSearchParams({
+      const params = {
         from: dateFrom,
         to: dateTo,
-      });
+      };
 
-      const response = await fetch(`/api/v1/ratio-insights?${params}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const response = await apiClient.get("/ratio-insights", { params });
+      const data = response.data;
       setPredictive(data.predictive);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = getErrorMessage(err);
       setError(errorMessage);
       toast.error("Gagal Memuat Prediksi", errorMessage);
     } finally {

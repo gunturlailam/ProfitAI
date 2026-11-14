@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sparkles, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, Info } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { apiClient, getErrorMessage } from "@/lib/api-client";
 
 interface AIInsightCardProps {
   ratioCode: string;
@@ -45,27 +46,13 @@ export function AIInsightCard({
     setError(null);
 
     try {
-      const params = new URLSearchParams({
+      const params = {
         from: dateFrom,
         to: dateTo,
-      });
+      };
 
-      const response = await fetch(
-        `/api/v1/ratios/${ratioCode}/explain?${params}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("access_token") || ""}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const response = await apiClient.post(`/ratios/${ratioCode}/explain`, {}, { params });
+      const data = response.data;
       
       setExplanation({
         explanation: data.explanation,
@@ -86,7 +73,7 @@ export function AIInsightCard({
         );
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = getErrorMessage(err);
       setError(errorMessage);
       toast.error("Gagal Memuat Analisis", errorMessage);
     } finally {

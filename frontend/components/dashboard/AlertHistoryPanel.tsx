@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Bell, Clock, AlertCircle, CheckCircle2, AlertTriangle, TrendingDown } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 
 interface Alert {
   code: string;
@@ -32,25 +33,19 @@ export function AlertHistoryPanel({
     const fetchAlerts = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams({
+        const params = {
           from: dateFrom,
           to: dateTo,
-        });
+        };
 
-        const response = await fetch(`/api/v1/ratio-insights?${params}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token") || ""}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const alertsWithTimestamp = (data.alerts || []).map((alert: Alert) => ({
-            ...alert,
-            timestamp: new Date().toISOString(),
-          }));
-          setAlerts(alertsWithTimestamp);
-        }
+        const response = await apiClient.get("/ratio-insights", { params });
+        const data = response.data;
+        
+        const alertsWithTimestamp = (data.alerts || []).map((alert: Alert) => ({
+          ...alert,
+          timestamp: new Date().toISOString(),
+        }));
+        setAlerts(alertsWithTimestamp);
       } catch (error) {
         console.error("Failed to fetch alerts:", error);
       } finally {

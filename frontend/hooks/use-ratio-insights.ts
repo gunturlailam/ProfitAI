@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "@/lib/toast";
+import { apiClient, getErrorMessage } from "@/lib/api-client";
 
 interface RatioInsight {
   ratio_code: string;
@@ -44,29 +45,20 @@ export function useRatioInsights(
     setError(null);
 
     try {
-      const params = new URLSearchParams({
+      const params: Record<string, string> = {
         from: dateFrom,
         to: dateTo,
-      });
+      };
 
       if (asOf) {
-        params.append("as_of", asOf);
+        params.as_of = asOf;
       }
 
-      const response = await fetch(`/api/v1/ratios?${params}`, {
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("access_token") || ""}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const response = await apiClient.get("/ratios", { params });
+      const data = response.data;
 
       // Transform API response to insights format
-      const ratioInsights: RatioInsight[] = data.ratios.map((ratio: any) => ({
+      const ratioInsights: RatioInsight[] = (data.ratios || []).map((ratio: any) => ({
         ratio_code: ratio.code,
         ratio_name: ratio.name,
         category: ratio.category,
@@ -77,7 +69,7 @@ export function useRatioInsights(
 
       setInsights(ratioInsights);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = getErrorMessage(err);
       setError(errorMessage);
       toast.error("Gagal Memuat Rasio", errorMessage);
     } finally {
@@ -87,31 +79,17 @@ export function useRatioInsights(
 
   const explainRatio = async (ratioCode: string): Promise<RatioInsight | null> => {
     try {
-      const params = new URLSearchParams({
+      const params: Record<string, string> = {
         from: dateFrom,
         to: dateTo,
-      });
+      };
 
       if (asOf) {
-        params.append("as_of", asOf);
+        params.as_of = asOf;
       }
 
-      const response = await fetch(
-        `/api/v1/ratios/${ratioCode}/explain?${params}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("access_token") || ""}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const response = await apiClient.post(`/ratios/${ratioCode}/explain`, {}, { params });
+      const data = response.data;
 
       // Update insight in state
       setInsights((prev) =>
@@ -145,7 +123,7 @@ export function useRatioInsights(
         model: data.model,
       };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = getErrorMessage(err);
       toast.error("Gagal Memuat Analisis AI", errorMessage);
       return null;
     }
