@@ -8,7 +8,7 @@ import { Alert } from "@/components/ui/Alert";
 import Link from "next/link";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { authApi } from "@/features/auth/api/auth-api";
-import { saveAccessToken, saveOrgId, saveOrganizations, getAccessToken } from "@/lib/auth";
+import { saveAccessToken, getAccessToken } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/api-client";
 import Image from "next/image";
 
@@ -80,10 +80,8 @@ export default function LoginPage() {
         password: formData.password,
       });
       saveAccessToken(access_token, formData.remember);
-      if (organization_id) saveOrgId(organization_id, formData.remember);
-      if (organizations && organizations.length > 0) {
-        saveOrganizations(organizations, formData.remember);
-      }
+      // Organization ID and organizations are handled by backend JWT token
+      // No need to store separately in frontend
       router.replace("/dashboard");
       
       // Safety: reset loading after 3 seconds if redirect hasn't happened
