@@ -42,22 +42,24 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       return;
     }
 
-    // WebSocket URL from environment or default
+    // Get token for authentication
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      console.warn("[WebSocket] No access token found, skipping connection");
+      return;
+    }
+
+    // WebSocket URL with token as query param
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
+    const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(token)}`;
     
     try {
-      const ws = new WebSocket(wsUrl);
+      const ws = new WebSocket(wsUrlWithToken);
 
       ws.onopen = () => {
         console.log("[WebSocket] Connected");
         setConnected(true);
         reconnectAttemptsRef.current = 0;
-        
-        // Authenticate if token available
-        const token = localStorage.getItem("access_token");
-        if (token) {
-          ws.send(JSON.stringify({ type: "auth", token }));
-        }
       };
 
       ws.onmessage = (event) => {

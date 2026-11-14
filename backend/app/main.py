@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal
 from typing import Optional
-from fastapi import FastAPI, Depends, HTTPException, Query, Request, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, Query, Request, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -117,6 +117,110 @@ def log_audit(db, org_id, user_id, action, entity_type=None, entity_id=None, pay
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+# ==========================================
+# WEBSOCKET REAL-TIME CONNECTION
+# ==========================================
+class ConnectionManager:
+    """Manages WebSocket connections for real-time updates"""
+    def __init__(self):
+        # Map: org_id -> set of WebSocket connections
+        self.active_connections: dict[int, set[WebSocket]] = defaultdict(set)
+        # Map: WebSocket -> org_id for reverse lookup
+        self.connection_orgs: dict[WebSocket, int] = {}
+
+    async def connect(self, websocket: WebSocket, org_id: int):
+        await websocket.accept()
+        self.active_connections[org_id].add(websocket)
+        self.connection_orgs[websocket] = org_id
+
+    def disconnect(self, websocket: WebSocket):
+        org_id = self.connection_orgs.get(websocket)
+        if org_id:
+            self.active_connections[org_id].discard(websocket)
+            del self.connection_orgs[websocket]
+
+    async def broadcast_to_org(self, org_id: int, message: dict):
+        """Broadcast message to all connections in an organization"""
+        connections = self.active_connections.get(org_id, set())
+        dead_connections = set()
+        
+        for connection in connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                dead_connections.add(connection)
+        
+        # Clean up dead connections
+        for dead in dead_connections:
+            self.disconnect(dead)
+
+ws_manager = ConnectionManager()
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = Query(None)):
+    """
+    WebSocket endpoint for real-time updates.
+    Client must provide token via query param: /ws?token=xxx
+    """
+    if not token:
+        await websocket.close(code=1008, reason="Missing authentication token")
+        return
+    
+    # Verify token and get user + org
+    db = next(get_db())
+    try:
+        session = db.query(models.Session).filter_by(token=token).first()
+        if not session or session.expires_at < datetime.now(timezone.utc):
+            await websocket.close(code=1008, reason="Invalid or expired token")
+            return
+        
+        user = db.query(models.User).filter_by(id=session.user_id).first()
+        if not user:
+            await websocket.close(code=1008, reason="User not found")
+            return
+        
+        # Get user's first organization (default org)
+        membership = db.query(models.Membership).filter_by(user_id=user.id).first()
+        if not membership:
+            await websocket.close(code=1008, reason="No organization membership")
+            return
+        
+        org_id = membership.organization_id
+        
+        # Connect to WebSocket manager
+        await ws_manager.connect(websocket, org_id)
+        
+        # Send welcome message
+        await websocket.send_json({
+            "type": "connected",
+            "data": {
+                "user_id": user.id,
+                "organization_id": org_id,
+                "message": "Real-time connection established"
+            }
+        })
+        
+        # Keep connection alive and handle incoming messages
+        try:
+            while True:
+                # Receive messages from client
+                data = await websocket.receive_json()
+                
+                # Handle client ping for keep-alive
+                if data.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+                
+                # Additional message handlers can be added here
+                
+        except WebSocketDisconnect:
+            ws_manager.disconnect(websocket)
+        except Exception as e:
+            print(f"WebSocket error: {e}")
+            ws_manager.disconnect(websocket)
+    
+    finally:
+        db.close()
 
 @app.get("/api/v1/models")
 @app.get("/v1/models")
