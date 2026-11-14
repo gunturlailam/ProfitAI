@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { toast } from "./toast";
+import { getAccessToken } from "./auth";
 
 interface WebSocketMessage {
   type: string;
@@ -42,8 +43,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       return;
     }
 
-    // Get token for authentication
-    const token = localStorage.getItem("profitai_access_token");
+    // Get token for authentication - check all storage locations
+    const token = getAccessToken();
     if (!token) {
       console.warn("[WebSocket] No access token found, skipping connection");
       return;
@@ -186,7 +187,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     // Custom event listener untuk token changes dalam same tab
     const handleTokenChange = () => {
-      const token = localStorage.getItem("profitai_access_token");
+      const token = getAccessToken();
       if (token && !wsRef.current) {
         console.log("[WebSocket] Token change detected, connecting");
         connect();
@@ -198,7 +199,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     // Poll untuk token availability (fallback jika event tidak fire)
     const pollInterval = setInterval(() => {
-      const token = localStorage.getItem("profitai_access_token");
+      const token = getAccessToken();
       if (token && !wsRef.current) {
         connect();
         clearInterval(pollInterval); // Stop polling setelah connect
