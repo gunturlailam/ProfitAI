@@ -43,7 +43,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     }
 
     // Get token for authentication
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem("profitai_access_token");
     if (!token) {
       console.warn("[WebSocket] No access token found, skipping connection");
       return;
@@ -171,10 +171,10 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     // Listen for storage events (token added from another tab)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "access_token" && e.newValue) {
+      if (e.key === "profitai_access_token" && e.newValue) {
         console.log("[WebSocket] Token detected, attempting connection");
         connect();
-      } else if (e.key === "access_token" && !e.newValue) {
+      } else if (e.key === "profitai_access_token" && !e.newValue) {
         // Token removed (logout)
         if (wsRef.current) {
           wsRef.current.close();
@@ -186,7 +186,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     // Custom event listener untuk token changes dalam same tab
     const handleTokenChange = () => {
-      const token = localStorage.getItem("access_token");
+      const token = localStorage.getItem("profitai_access_token");
       if (token && !wsRef.current) {
         console.log("[WebSocket] Token change detected, connecting");
         connect();
@@ -198,7 +198,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     // Poll untuk token availability (fallback jika event tidak fire)
     const pollInterval = setInterval(() => {
-      const token = localStorage.getItem("access_token");
+      const token = localStorage.getItem("profitai_access_token");
       if (token && !wsRef.current) {
         connect();
         clearInterval(pollInterval); // Stop polling setelah connect
