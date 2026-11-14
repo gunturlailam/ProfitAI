@@ -2780,3 +2780,161 @@ def list_audit_events(limit: int = 50, offset: int = 0,
         } for ev in rows]
     }
 
+
+
+# ==========================================
+# RATIO ANALYSIS & INSIGHTS
+# ==========================================
+@app.get("/api/v1/ratios")
+def get_ratios(
+    date_from: date = Query(alias="from"),
+    date_to: date = Query(alias="to"),
+    org_id=Depends(get_current_org),
+    db=Depends(get_db),
+):
+    """
+    Calculate financial ratios for the given period.
+    Returns 16 key ratios with thresholds and quality bands.
+    """
+    # Get industry for threshold customization
+    profile = db.query(models.BusinessProfile).filter_by(organization_id=org_id).first()
+    industry = profile.industry if profile else None
+    
+    result = ratio_service.compute_ratio_snapshot(
+        db=db,
+        organization_id=org_id,
+        period_from=date_from,
+        period_to=date_to,
+        industry=industry,
+        persist=True,
+    )
+    
+    return {
+        "period_from": str(date_from),
+        "period_to": str(date_to),
+        "formula_version": result.get("formula_version"),
+        "data_quality": result.get("data_quality"),
+        "ratios": result.get("ratios", []),
+        "source": result.get("source"),
+    }
+
+
+@app.get("/api/v1/ratio-insights")
+def get_ratio_insights(
+    date_from: date = Query(alias="from"),
+    date_to: date = Query(alias="to"),
+    org_id=Depends(get_current_org),
+    db=Depends(get_db),
+):
+    """
+    AI-powered ratio insights: descriptive, predictive, and prescriptive analysis.
+    Includes:
+    - Current status summary
+    - Trend analysis (improving/declining)
+    - Predictive projections
+    - Actionable recommendations
+    """
+    # Get industry for threshold customization
+    profile = db.query(models.BusinessProfile).filter_by(organization_id=org_id).first()
+    industry = profile.industry if profile else None
+    
+    # Build insights (combines current + history + predictions)
+    insights = ratio_insights.build_insights(
+        db=db,
+        organization_id=org_id,
+        period_from=date_from,
+        period_to=date_to,
+        industry=industry,
+    )
+    
+    return {
+        "period_from": str(date_from),
+        "period_to": str(date_to),
+        "insights_version": insights.get("version"),
+        "summary": insights.get("summary"),
+        "descriptive": insights.get("descriptive"),
+        "predictive": insights.get("predictive"),
+        "prescriptive": insights.get("prescriptive"),
+        "alerts": insights.get("alerts", []),
+        "data_quality": insights.get("data_quality"),
+    }
+
+
+@app.get("/api/v1/ratios/thresholds")
+def get_ratio_thresholds(
+    org_id=Depends(get_current_org),
+    db=Depends(get_db),
+):
+    """
+    Get effective ratio thresholds for the organization.
+    Combines default thresholds with organization-specific overrides.
+    """
+    profile = db.query(models.BusinessProfile).filter_by(organization_id=org_id).first()
+    industry = profile.industry if profile else None
+    
+    thresholds = ratio_service.threshold_list(
+        db=db,
+        organization_id=org_id,
+        industry=industry,
+    )
+    
+    return {
+        "industry": industry,
+        "thresholds": thresholds,
+    }
+
+
+@app.get("/api/v1/ratios/history")
+def get_ratio_history(
+    date_to: date = Query(alias="to"),
+    limit: int = Query(12, le=24),
+    org_id=Depends(get_current_org),
+    db=Depends(get_db),
+):
+    """
+    Get historical ratio snapshots for trend analysis.
+    Returns up to `limit` most recent snapshots.
+    """
+    history = ratio_service.history_ratios(
+        db=db,
+        organization_id=org_id,
+        period_to=date_to,
+        limit=limit,
+    )
+    
+    return {
+        "period_to": str(date_to),
+        "limit": limit,
+        "history": history,
+    }
+
+
+@app.get("/api/v1/balance-sheet")
+def get_balance_sheet(
+    as_of: date = Query(...),
+    org_id=Depends(get_current_org),
+    db=Depends(get_db),
+):
+    """
+    Get balance sheet (snapshot neraca) as of a specific date.
+    Returns assets, liabilities, equity with current/non-current classification.
+    """
+    result = ratio_service.balance_sheet(
+        db=db,
+        organization_id=org_id,
+        as_of=as_of,
+    )
+    
+    return result
+
+
+@app.get("/api/v1/ratios/metadata")
+def get_ratio_metadata():
+    """
+    Get metadata for all 16 financial ratios.
+    Includes names, categories, formulas, and units.
+    """
+    return {
+        "version": "1.1.0",
+        "ratios": RATIO_META,
+    }
