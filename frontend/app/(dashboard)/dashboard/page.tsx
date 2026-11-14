@@ -62,9 +62,12 @@ function riskLevelClasses(level: string) {
 }
 
 export default function DashboardPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("MTD");
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("YTD");
 
-  const dateRange = useMemo(() => getDateRangeForPeriod(selectedPeriod), [selectedPeriod]);
+  const dateRange = useMemo(
+    () => getDateRangeForPeriod(selectedPeriod),
+    [selectedPeriod],
+  );
 
   const { data, isLoading, error } = useFinancialSummary(dateRange);
   const { data: health } = useFinancialHealth(dateRange);
@@ -127,7 +130,8 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6 p-6">
         <Alert variant="error">
-          Gagal memuat data finansial. Pastikan backend berjalan dan coba refresh halaman.
+          Gagal memuat data finansial. Pastikan backend berjalan dan coba
+          refresh halaman.
         </Alert>
       </div>
     );
@@ -253,7 +257,10 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
             <div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f5f5f5] border border-[#e5e5e5] mb-4">
-                <Brain className="w-3.5 h-3.5 text-[#666666]" strokeWidth={2.5} />
+                <Brain
+                  className="w-3.5 h-3.5 text-[#666666]"
+                  strokeWidth={2.5}
+                />
                 <span className="text-xs font-bold text-[#666666] uppercase tracking-wide">
                   Sinyal Risiko Deterministik
                 </span>
@@ -262,11 +269,14 @@ export default function DashboardPage() {
                 Ringkasan Kesehatan Finansial
               </h2>
               <p className="text-sm text-[#666666] leading-relaxed max-w-2xl">
-                Dihitung oleh rule engine backend dari transaksi periode ini. Panel ini
-                menampilkan sinyal apa adanya, bukan narasi AI generatif.
+                Dihitung oleh rule engine backend dari transaksi periode ini.
+                Panel ini menampilkan sinyal apa adanya, bukan narasi AI
+                generatif.
               </p>
             </div>
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold whitespace-nowrap ${riskLevelClasses(healthLevel)}`}>
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold whitespace-nowrap ${riskLevelClasses(healthLevel)}`}
+            >
               <span className="w-2 h-2 rounded-full bg-current" />
               {healthLabel}
             </span>
@@ -275,8 +285,8 @@ export default function DashboardPage() {
           <div className="space-y-3 mb-6">
             {signals.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[#e5e5e5] bg-[#fafaf9] p-4 text-sm text-[#666666]">
-                Belum ada sinyal risiko pada periode ini. Data yang belum lengkap
-                tidak dianggap sebagai kondisi normal.
+                Belum ada sinyal risiko pada periode ini. Data yang belum
+                lengkap tidak dianggap sebagai kondisi normal.
               </div>
             ) : (
               signals.slice(0, 3).map((signal) => (
@@ -284,7 +294,9 @@ export default function DashboardPage() {
                   key={signal.id}
                   className="flex items-start gap-3 rounded-xl border border-[#e5e5e5] p-4"
                 >
-                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0 ${riskLevelClasses(signal.level)}`}>
+                  <div
+                    className={`w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0 ${riskLevelClasses(signal.level)}`}
+                  >
                     {signal.level === "normal" ? (
                       <CheckCircle2 className="w-4 h-4" strokeWidth={2.5} />
                     ) : (
@@ -293,12 +305,18 @@ export default function DashboardPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <p className="text-sm font-bold text-[#1f1f1f]">{signal.title}</p>
-                      <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${riskLevelClasses(signal.level)}`}>
+                      <p className="text-sm font-bold text-[#1f1f1f]">
+                        {signal.title}
+                      </p>
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${riskLevelClasses(signal.level)}`}
+                      >
                         {riskLevelLabel(signal.level)}
                       </span>
                     </div>
-                    <p className="text-xs text-[#666666] leading-relaxed">{signal.explanation}</p>
+                    <p className="text-xs text-[#666666] leading-relaxed">
+                      {signal.explanation}
+                    </p>
                     <p className="text-[11px] text-[#999999] mt-1">
                       Pemicu: {signal.trigger_metric}
                     </p>
@@ -322,29 +340,38 @@ export default function DashboardPage() {
           {/* Health Score */}
           <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5] shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-[#1f1f1f]">Kesehatan Finansial</h3>
-              <Link href="/insights" className="text-xs font-bold text-[#ffc900] hover:text-[#f0bd00] transition-colors">
+              <h3 className="text-sm font-bold text-[#1f1f1f]">
+                Kesehatan Finansial
+              </h3>
+              <Link
+                href="/insights"
+                className="text-xs font-bold text-[#ffc900] hover:text-[#f0bd00] transition-colors"
+              >
                 Detail →
               </Link>
             </div>
 
             <div className="flex items-center gap-4 mb-5">
-              <div className={`w-24 h-24 flex-shrink-0 rounded-full border-4 flex items-center justify-center text-center font-bold text-lg px-2 ${
-                healthLevel === "critical"
-                  ? "border-red-300 bg-red-50 text-red-600"
-                  : healthLevel === "attention"
-                    ? "border-amber-300 bg-amber-50 text-amber-600"
-                    : healthLevel === "normal"
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-600"
-                      : "border-gray-300 bg-gray-50 text-gray-600"
-              }`}>
+              <div
+                className={`w-24 h-24 flex-shrink-0 rounded-full border-4 flex items-center justify-center text-center font-bold text-lg px-2 ${
+                  healthLevel === "critical"
+                    ? "border-red-300 bg-red-50 text-red-600"
+                    : healthLevel === "attention"
+                      ? "border-amber-300 bg-amber-50 text-amber-600"
+                      : healthLevel === "normal"
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-600"
+                        : "border-gray-300 bg-gray-50 text-gray-600"
+                }`}
+              >
                 {healthLabel}
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-bold text-[#1f1f1f] mb-0.5">
                   {healthLabel}
                 </h4>
-                <p className="text-xs text-[#666666] leading-relaxed">{healthDescription}</p>
+                <p className="text-xs text-[#666666] leading-relaxed">
+                  {healthDescription}
+                </p>
               </div>
             </div>
 
@@ -356,9 +383,16 @@ export default function DashboardPage() {
                 </p>
               ) : (
                 signals.slice(0, 4).map((signal) => (
-                  <div key={signal.id} className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-[#666666] truncate">{signal.title}</span>
-                    <span className={`inline-flex items-center gap-1 text-xs font-bold whitespace-nowrap ${riskLevelClasses(signal.level)} border-0 bg-transparent px-0`}>
+                  <div
+                    key={signal.id}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    <span className="text-xs text-[#666666] truncate">
+                      {signal.title}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 text-xs font-bold whitespace-nowrap ${riskLevelClasses(signal.level)} border-0 bg-transparent px-0`}
+                    >
                       <span className="w-2 h-2 rounded-full bg-current"></span>
                       {riskLevelLabel(signal.level)}
                     </span>
@@ -371,7 +405,7 @@ export default function DashboardPage() {
       </div>
 
       {/* AI Insights Panel */}
-      <AIInsightsPanel 
+      <AIInsightsPanel
         initialDateFrom={dateRange.from}
         initialDateTo={dateRange.to}
       />
@@ -383,19 +417,23 @@ export default function DashboardPage() {
       />
 
       {/* Alert History Panel */}
-      <AlertHistoryPanel
-        dateFrom={dateRange.from}
-        dateTo={dateRange.to}
-      />
+      <AlertHistoryPanel dateFrom={dateRange.from} dateTo={dateRange.to} />
 
       {/* Recent Activity */}
       <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5] shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-bold text-[#1f1f1f]">Aktivitas Terkini</h3>
-            <p className="text-xs text-[#999999] mt-0.5">Transaksi dan perubahan terbaru</p>
+            <h3 className="text-lg font-bold text-[#1f1f1f]">
+              Aktivitas Terkini
+            </h3>
+            <p className="text-xs text-[#999999] mt-0.5">
+              Transaksi dan perubahan terbaru
+            </p>
           </div>
-          <Link href="/transactions" className="inline-flex items-center gap-2 text-sm font-bold text-[#ffc900] hover:text-[#f0bd00] transition-colors">
+          <Link
+            href="/transactions"
+            className="inline-flex items-center gap-2 text-sm font-bold text-[#ffc900] hover:text-[#f0bd00] transition-colors"
+          >
             <span>Lihat Semua</span>
             <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
           </Link>
@@ -429,11 +467,13 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <span className={`text-sm font-bold ${
-                  transaction.tx_type === "income"
-                    ? "text-[#2e7d32]"
-                    : "text-[#c62828]"
-                }`}>
+                <span
+                  className={`text-sm font-bold ${
+                    transaction.tx_type === "income"
+                      ? "text-[#2e7d32]"
+                      : "text-[#c62828]"
+                  }`}
+                >
                   {formatCurrency(transaction.amount, data.currency)}
                 </span>
               </div>

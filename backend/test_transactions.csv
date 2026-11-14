@@ -1,0 +1,469 @@
+transaction_date,description,amount,type,category,notes
+2026-01-01,Penjualan Kopi & Snack - Shift Pagi,2349552,income,Penjualan Produk,Transaksi Thursday
+2026-01-02,Penjualan Kopi & Snack - Shift Sore,2708582,income,Penjualan Produk,Transaksi Friday
+2026-01-02,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan January
+2026-01-03,Penjualan Kopi & Snack - Shift Siang,4169020,income,Penjualan Produk,Transaksi Saturday
+2026-01-04,Penjualan Kopi & Snack - Shift Pagi,5295458,income,Penjualan Produk,Transaksi Sunday
+2026-01-05,Penjualan Kopi & Snack - Shift Sore,2128119,income,Penjualan Produk,Transaksi Monday
+2026-01-06,Penjualan Kopi & Snack - Shift Siang,2004577,income,Penjualan Produk,Transaksi Tuesday
+2026-01-06,Bensin Motor Delivery,302267,expense,Transportasi & Pengiriman,
+2026-01-07,Penjualan Kopi & Snack - Shift Sore,2282013,income,Penjualan Produk,Transaksi Wednesday
+2026-01-08,Penjualan Kopi & Snack - Shift Pagi,1972302,income,Penjualan Produk,Transaksi Thursday
+2026-01-09,Penjualan Kopi & Snack - Shift Sore,1806837,income,Penjualan Produk,Transaksi Friday
+2026-01-09,Bayar Supplier Susu & Krimer,6986807,expense,Bahan Baku,
+2026-01-10,Penjualan Kopi & Snack - Shift Pagi,5496687,income,Penjualan Produk,Transaksi Saturday
+2026-01-11,Penjualan Kopi & Snack - Shift Sore,4633974,income,Penjualan Produk,Transaksi Sunday
+2026-01-12,Listrik PLN,2888569,expense,"Utilitas (Listrik, Air, Internet)",
+2026-01-12,Air PDAM + Internet,624420,expense,"Utilitas (Listrik, Air, Internet)",
+2026-01-12,Pajak Restoran,1011132,expense,Pajak & Admin Bank,
+2026-01-13,Penjualan Kopi & Snack - Shift Sore,3235768,income,Penjualan Produk,Transaksi Tuesday
+2026-01-14,Penjualan Kopi & Snack - Shift Siang,2426335,income,Penjualan Produk,Transaksi Wednesday
+2026-01-15,Penjualan Kopi & Snack - Shift Pagi,3028826,income,Penjualan Produk,Transaksi Thursday
+2026-01-17,Penjualan Kopi & Snack - Shift Siang,4637339,income,Penjualan Produk,Transaksi Saturday
+2026-01-18,Penjualan Kopi & Snack - Shift Sore,4192543,income,Penjualan Produk,Transaksi Sunday
+2026-01-18,Bayar Supplier Snack & Pastry,7036446,expense,Bahan Baku,
+2026-01-20,Penjualan Kopi & Snack - Shift Pagi,1445483,income,Penjualan Produk,Transaksi Tuesday
+2026-01-21,Penjualan Kopi & Snack - Shift Pagi,1834079,income,Penjualan Produk,Transaksi Wednesday
+2026-01-22,Penjualan Kopi & Snack - Shift Sore,2868056,income,Penjualan Produk,Transaksi Thursday
+2026-01-23,Penjualan Kopi & Snack - Shift Siang,2194268,income,Penjualan Produk,Transaksi Friday
+2026-01-24,Penjualan Kopi & Snack - Shift Siang,5454899,income,Penjualan Produk,Transaksi Saturday
+2026-01-24,Bayar Supplier Kopi Arabica - Toraja,7131493,expense,Bahan Baku,
+2026-01-25,Penjualan Kopi & Snack - Shift Sore,4089474,income,Penjualan Produk,Transaksi Sunday
+2026-01-26,Penjualan Kopi & Snack - Shift Pagi,1830433,income,Penjualan Produk,Transaksi Monday
+2026-01-26,Bayar Supplier Kopi Robusta - Lampung,7232083,expense,Bahan Baku,
+2026-01-27,Penjualan Kopi & Snack - Shift Pagi,3225936,income,Penjualan Produk,Transaksi Tuesday
+2026-01-27,Gaji Barista (3 orang) - January,15000000,expense,Gaji Karyawan,
+2026-01-27,Gaji Kasir (2 orang) - January,8000000,expense,Gaji Karyawan,
+2026-01-27,Gaji Kitchen Staff (2 orang) - January,7000000,expense,Gaji Karyawan,
+2026-01-27,Gaji Manager - January,6000000,expense,Gaji Karyawan,
+2026-01-28,Penjualan Kopi & Snack - Shift Pagi,2607110,income,Penjualan Produk,Transaksi Wednesday
+2026-01-28,Workshop Barista,14084024,income,Penjualan Jasa,Event khusus
+2026-01-30,Penjualan Kopi & Snack - Shift Sore,2591111,income,Penjualan Produk,Transaksi Friday
+2026-01-31,Penjualan Kopi & Snack - Shift Sore,4712979,income,Penjualan Produk,Transaksi Saturday
+2026-02-01,Penjualan Kopi & Snack - Shift Siang,5369835,income,Penjualan Produk,Transaksi Sunday
+2026-02-01,Cetak Flyer & Banner Promo,1331519,expense,Marketing & Promosi,
+2026-02-02,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan February
+2026-02-03,Penjualan Kopi & Snack - Shift Pagi,2177980,income,Penjualan Produk,Transaksi Tuesday
+2026-02-03,Bayar Supplier Kopi Arabica - Toraja,5083197,expense,Bahan Baku,
+2026-02-04,Penjualan Kopi & Snack - Shift Sore,2487482,income,Penjualan Produk,Transaksi Wednesday
+2026-02-05,Penjualan Kopi & Snack - Shift Sore,2907422,income,Penjualan Produk,Transaksi Thursday
+2026-02-06,Penjualan Kopi & Snack - Shift Sore,3115445,income,Penjualan Produk,Transaksi Friday
+2026-02-09,Penjualan Kopi & Snack - Shift Siang,2823779,income,Penjualan Produk,Transaksi Monday
+2026-02-10,Penjualan Kopi & Snack - Shift Pagi,2009580,income,Penjualan Produk,Transaksi Tuesday
+2026-02-11,Penjualan Kopi & Snack - Shift Sore,2314171,income,Penjualan Produk,Transaksi Wednesday
+2026-02-11,Listrik PLN,2398011,expense,"Utilitas (Listrik, Air, Internet)",
+2026-02-11,Air PDAM + Internet,721357,expense,"Utilitas (Listrik, Air, Internet)",
+2026-02-13,Penjualan Kopi & Snack - Shift Sore,1518005,income,Penjualan Produk,Transaksi Friday
+2026-02-14,Penjualan Kopi & Snack - Shift Sore,5288663,income,Penjualan Produk,Transaksi Saturday
+2026-02-15,Penjualan Kopi & Snack - Shift Pagi,3665095,income,Penjualan Produk,Transaksi Sunday
+2026-02-16,Penjualan Kopi & Snack - Shift Pagi,2824503,income,Penjualan Produk,Transaksi Monday
+2026-02-17,Penjualan Kopi & Snack - Shift Pagi,2854246,income,Penjualan Produk,Transaksi Tuesday
+2026-02-18,Penjualan Kopi & Snack - Shift Pagi,2141095,income,Penjualan Produk,Transaksi Wednesday
+2026-02-18,Bayar Supplier Susu & Krimer,5224250,expense,Bahan Baku,
+2026-02-21,Penjualan Kopi & Snack - Shift Siang,5395479,income,Penjualan Produk,Transaksi Saturday
+2026-02-21,Pajak Restoran,1436767,expense,Pajak & Admin Bank,
+2026-02-22,Penjualan Kopi & Snack - Shift Siang,5066438,income,Penjualan Produk,Transaksi Sunday
+2026-02-22,Bayar Supplier Kopi Robusta - Lampung,5382692,expense,Bahan Baku,
+2026-02-23,Bensin Motor Delivery,472184,expense,Transportasi & Pengiriman,
+2026-02-24,Penjualan Kopi & Snack - Shift Sore,3474618,income,Penjualan Produk,Transaksi Tuesday
+2026-02-25,Penjualan Kopi & Snack - Shift Sore,1647597,income,Penjualan Produk,Transaksi Wednesday
+2026-02-27,Penjualan Kopi & Snack - Shift Sore,1832848,income,Penjualan Produk,Transaksi Friday
+2026-02-28,Penjualan Kopi & Snack - Shift Siang,4319570,income,Penjualan Produk,Transaksi Saturday
+2026-02-28,Gaji Barista (3 orang) - February,15000000,expense,Gaji Karyawan,
+2026-02-28,Gaji Kasir (2 orang) - February,8000000,expense,Gaji Karyawan,
+2026-02-28,Gaji Kitchen Staff (2 orang) - February,7000000,expense,Gaji Karyawan,
+2026-02-28,Gaji Manager - February,6000000,expense,Gaji Karyawan,
+2026-03-01,Penjualan Kopi & Snack - Shift Siang,11096940,income,Penjualan Produk,Transaksi Sunday
+2026-03-01,Perbaikan AC,1829456,expense,Biaya Operasional Lain,
+2026-03-02,Penjualan Kopi & Snack - Shift Sore,5498606,income,Penjualan Produk,Transaksi Monday
+2026-03-03,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan March
+2026-03-04,Penjualan Kopi & Snack - Shift Sore,5648123,income,Penjualan Produk,Transaksi Wednesday
+2026-03-04,Perbaikan AC,1752221,expense,Biaya Operasional Lain,
+2026-03-05,Penjualan Kopi & Snack - Shift Siang,5047224,income,Penjualan Produk,Transaksi Thursday
+2026-03-06,Penjualan Kopi & Snack - Shift Pagi,6132949,income,Penjualan Produk,Transaksi Friday
+2026-03-07,Penjualan Kopi & Snack - Shift Sore,9428430,income,Penjualan Produk,Transaksi Saturday
+2026-03-09,Penjualan Kopi & Snack - Shift Pagi,3112072,income,Penjualan Produk,Transaksi Monday
+2026-03-10,Penjualan Kopi & Snack - Shift Sore,6986831,income,Penjualan Produk,Transaksi Tuesday
+2026-03-10,Listrik PLN,2843867,expense,"Utilitas (Listrik, Air, Internet)",
+2026-03-10,Air PDAM + Internet,785003,expense,"Utilitas (Listrik, Air, Internet)",
+2026-03-11,Penjualan Kopi & Snack - Shift Sore,6332586,income,Penjualan Produk,Transaksi Wednesday
+2026-03-12,Penjualan Kopi & Snack - Shift Pagi,4283532,income,Penjualan Produk,Transaksi Thursday
+2026-03-13,Penjualan Kopi & Snack - Shift Siang,6501952,income,Penjualan Produk,Transaksi Friday
+2026-03-14,Penjualan Kopi & Snack - Shift Pagi,9086648,income,Penjualan Produk,Transaksi Saturday
+2026-03-15,Penjualan Kopi & Snack - Shift Siang,11112470,income,Penjualan Produk,Transaksi Sunday
+2026-03-15,Beli Mesin Espresso Baru,25000000,expense,Perlengkapan & Peralatan,Upgrade peralatan
+2026-03-16,Penjualan Kopi & Snack - Shift Pagi,5426359,income,Penjualan Produk,Transaksi Monday
+2026-03-17,Penjualan Kopi & Snack - Shift Sore,5123573,income,Penjualan Produk,Transaksi Tuesday
+2026-03-18,Penjualan Kopi & Snack - Shift Siang,5177032,income,Penjualan Produk,Transaksi Wednesday
+2026-03-18,Bayar Supplier Kopi Arabica - Toraja,5499526,expense,Bahan Baku,
+2026-03-19,Penjualan Kopi & Snack - Shift Siang,4648427,income,Penjualan Produk,Transaksi Thursday
+2026-03-20,Penjualan Kopi & Snack - Shift Pagi,4950671,income,Penjualan Produk,Transaksi Friday
+2026-03-20,Bayar Supplier Kopi Robusta - Lampung,5600060,expense,Bahan Baku,
+2026-03-20,Bayar Supplier Kopi Robusta - Lampung,6387438,expense,Bahan Baku,
+2026-03-21,Penjualan Kopi & Snack - Shift Siang,8169044,income,Penjualan Produk,Transaksi Saturday
+2026-03-22,Penjualan Kopi & Snack - Shift Sore,7609459,income,Penjualan Produk,Transaksi Sunday
+2026-03-23,Penjualan Kopi & Snack - Shift Pagi,5684597,income,Penjualan Produk,Transaksi Monday
+2026-03-24,Penjualan Kopi & Snack - Shift Pagi,4104101,income,Penjualan Produk,Transaksi Tuesday
+2026-03-26,Penjualan Kopi & Snack - Shift Sore,4717013,income,Penjualan Produk,Transaksi Thursday
+2026-03-27,Penjualan Kopi & Snack - Shift Sore,6507225,income,Penjualan Produk,Transaksi Friday
+2026-03-28,Penjualan Kopi & Snack - Shift Siang,10563963,income,Penjualan Produk,Transaksi Saturday
+2026-03-28,Gaji Barista (3 orang) - March,15000000,expense,Gaji Karyawan,
+2026-03-28,Gaji Kasir (2 orang) - March,8000000,expense,Gaji Karyawan,
+2026-03-28,Gaji Kitchen Staff (2 orang) - March,7000000,expense,Gaji Karyawan,
+2026-03-28,Gaji Manager - March,6000000,expense,Gaji Karyawan,
+2026-03-30,Penjualan Kopi & Snack - Shift Sore,2832344,income,Penjualan Produk,Transaksi Monday
+2026-03-31,Penjualan Kopi & Snack - Shift Pagi,6930365,income,Penjualan Produk,Transaksi Tuesday
+2026-04-01,Pajak Restoran,1345547,expense,Pajak & Admin Bank,
+2026-04-02,Penjualan Kopi & Snack - Shift Sore,6665118,income,Penjualan Produk,Transaksi Thursday
+2026-04-02,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan April
+2026-04-03,Penjualan Kopi & Snack - Shift Pagi,6294310,income,Penjualan Produk,Transaksi Friday
+2026-04-04,Penjualan Kopi & Snack - Shift Pagi,7780841,income,Penjualan Produk,Transaksi Saturday
+2026-04-05,Penjualan Kopi & Snack - Shift Sore,9794843,income,Penjualan Produk,Transaksi Sunday
+2026-04-05,Cetak Flyer & Banner Promo,1716817,expense,Marketing & Promosi,
+2026-04-07,Penjualan Kopi & Snack - Shift Siang,3939377,income,Penjualan Produk,Transaksi Tuesday
+2026-04-08,Penjualan Kopi & Snack - Shift Sore,5068217,income,Penjualan Produk,Transaksi Wednesday
+2026-04-09,Penjualan Kopi & Snack - Shift Siang,3979124,income,Penjualan Produk,Transaksi Thursday
+2026-04-09,Penjualan Grosir Biji Kopi,10617541,income,Penjualan Produk,Event khusus
+2026-04-10,Penjualan Kopi & Snack - Shift Sore,4886224,income,Penjualan Produk,Transaksi Friday
+2026-04-11,Bayar Supplier Gula & Sirup,6893628,expense,Bahan Baku,
+2026-04-12,Penjualan Kopi & Snack - Shift Sore,7183180,income,Penjualan Produk,Transaksi Sunday
+2026-04-12,Listrik PLN,2151186,expense,"Utilitas (Listrik, Air, Internet)",
+2026-04-12,Air PDAM + Internet,719275,expense,"Utilitas (Listrik, Air, Internet)",
+2026-04-13,Penjualan Kopi & Snack - Shift Pagi,2992232,income,Penjualan Produk,Transaksi Monday
+2026-04-14,Penjualan Kopi & Snack - Shift Siang,5906745,income,Penjualan Produk,Transaksi Tuesday
+2026-04-15,Penjualan Kopi & Snack - Shift Siang,5418329,income,Penjualan Produk,Transaksi Wednesday
+2026-04-15,Biaya Admin Bank,107227,expense,Pajak & Admin Bank,
+2026-04-16,Penjualan Kopi & Snack - Shift Pagi,5002863,income,Penjualan Produk,Transaksi Thursday
+2026-04-17,Penjualan Kopi & Snack - Shift Sore,3107077,income,Penjualan Produk,Transaksi Friday
+2026-04-18,Penjualan Kopi & Snack - Shift Pagi,10978139,income,Penjualan Produk,Transaksi Saturday
+2026-04-19,Penjualan Kopi & Snack - Shift Sore,7732241,income,Penjualan Produk,Transaksi Sunday
+2026-04-19,Bayar Supplier Kopi Robusta - Lampung,7490445,expense,Bahan Baku,
+2026-04-21,Penjualan Kopi & Snack - Shift Siang,6867684,income,Penjualan Produk,Transaksi Tuesday
+2026-04-22,Penjualan Kopi & Snack - Shift Sore,4378673,income,Penjualan Produk,Transaksi Wednesday
+2026-04-22,Perbaikan AC,2577758,expense,Biaya Operasional Lain,
+2026-04-23,Penjualan Kopi & Snack - Shift Sore,4206102,income,Penjualan Produk,Transaksi Thursday
+2026-04-24,Penjualan Kopi & Snack - Shift Siang,4183706,income,Penjualan Produk,Transaksi Friday
+2026-04-24,Bayar Supplier Susu & Krimer,6234765,expense,Bahan Baku,
+2026-04-25,Penjualan Kopi & Snack - Shift Siang,8009465,income,Penjualan Produk,Transaksi Saturday
+2026-04-26,Penjualan Kopi & Snack - Shift Siang,10985135,income,Penjualan Produk,Transaksi Sunday
+2026-04-26,Gaji Barista (3 orang) - April,15000000,expense,Gaji Karyawan,
+2026-04-26,Gaji Kasir (2 orang) - April,8000000,expense,Gaji Karyawan,
+2026-04-26,Gaji Kitchen Staff (2 orang) - April,7000000,expense,Gaji Karyawan,
+2026-04-26,Gaji Manager - April,6000000,expense,Gaji Karyawan,
+2026-04-27,Penjualan Kopi & Snack - Shift Sore,4131535,income,Penjualan Produk,Transaksi Monday
+2026-04-28,Penjualan Kopi & Snack - Shift Pagi,4678121,income,Penjualan Produk,Transaksi Tuesday
+2026-04-29,Penjualan Kopi & Snack - Shift Pagi,5718977,income,Penjualan Produk,Transaksi Wednesday
+2026-04-30,Penjualan Kopi & Snack - Shift Sore,5371517,income,Penjualan Produk,Transaksi Thursday
+2026-05-01,Penjualan Kopi & Snack - Shift Siang,4594403,income,Penjualan Produk,Transaksi Friday
+2026-05-01,Biaya Admin Bank,148303,expense,Pajak & Admin Bank,
+2026-05-01,Bensin Motor Delivery,363698,expense,Transportasi & Pengiriman,
+2026-05-02,Penjualan Kopi & Snack - Shift Siang,7795623,income,Penjualan Produk,Transaksi Saturday
+2026-05-02,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan May
+2026-05-02,Bayar Supplier Kopi Robusta - Lampung,6898423,expense,Bahan Baku,
+2026-05-04,Penjualan Kopi & Snack - Shift Siang,3070562,income,Penjualan Produk,Transaksi Monday
+2026-05-05,Penjualan Kopi & Snack - Shift Sore,3762067,income,Penjualan Produk,Transaksi Tuesday
+2026-05-06,Penjualan Kopi & Snack - Shift Sore,3257615,income,Penjualan Produk,Transaksi Wednesday
+2026-05-07,Penjualan Kopi & Snack - Shift Sore,3840232,income,Penjualan Produk,Transaksi Thursday
+2026-05-08,Bayar Supplier Kopi Arabica - Toraja,5951424,expense,Bahan Baku,
+2026-05-09,Penjualan Kopi & Snack - Shift Sore,7988204,income,Penjualan Produk,Transaksi Saturday
+2026-05-10,Penjualan Kopi & Snack - Shift Sore,7106926,income,Penjualan Produk,Transaksi Sunday
+2026-05-11,Penjualan Kopi & Snack - Shift Sore,4274422,income,Penjualan Produk,Transaksi Monday
+2026-05-12,Penjualan Kopi & Snack - Shift Siang,2350449,income,Penjualan Produk,Transaksi Tuesday
+2026-05-12,Listrik PLN,2132259,expense,"Utilitas (Listrik, Air, Internet)",
+2026-05-12,Air PDAM + Internet,774689,expense,"Utilitas (Listrik, Air, Internet)",
+2026-05-13,Penjualan Kopi & Snack - Shift Sore,4938033,income,Penjualan Produk,Transaksi Wednesday
+2026-05-14,Penjualan Kopi & Snack - Shift Siang,2407385,income,Penjualan Produk,Transaksi Thursday
+2026-05-15,Penjualan Kopi & Snack - Shift Pagi,2375484,income,Penjualan Produk,Transaksi Friday
+2026-05-15,Pajak Restoran,1279131,expense,Pajak & Admin Bank,
+2026-05-16,Penjualan Kopi & Snack - Shift Pagi,6587676,income,Penjualan Produk,Transaksi Saturday
+2026-05-17,Penjualan Kopi & Snack - Shift Pagi,5492180,income,Penjualan Produk,Transaksi Sunday
+2026-05-19,Penjualan Kopi & Snack - Shift Siang,4230769,income,Penjualan Produk,Transaksi Tuesday
+2026-05-20,Penjualan Kopi & Snack - Shift Pagi,4347229,income,Penjualan Produk,Transaksi Wednesday
+2026-05-22,Penjualan Kopi & Snack - Shift Pagi,3705450,income,Penjualan Produk,Transaksi Friday
+2026-05-23,Penjualan Kopi & Snack - Shift Sore,7734960,income,Penjualan Produk,Transaksi Saturday
+2026-05-24,Penjualan Kopi & Snack - Shift Sore,6622763,income,Penjualan Produk,Transaksi Sunday
+2026-05-25,Penjualan Kopi & Snack - Shift Sore,2098631,income,Penjualan Produk,Transaksi Monday
+2026-05-26,Bayar Supplier Susu & Krimer,7426012,expense,Bahan Baku,
+2026-05-27,Gaji Barista (3 orang) - May,30000000,expense,Gaji Karyawan,THR Lebaran
+2026-05-27,Gaji Kasir (2 orang) - May,16000000,expense,Gaji Karyawan,THR Lebaran
+2026-05-27,Gaji Kitchen Staff (2 orang) - May,14000000,expense,Gaji Karyawan,THR Lebaran
+2026-05-27,Gaji Manager - May,12000000,expense,Gaji Karyawan,THR Lebaran
+2026-05-29,Penjualan Kopi & Snack - Shift Siang,3311928,income,Penjualan Produk,Transaksi Friday
+2026-05-30,Penjualan Kopi & Snack - Shift Sore,5776032,income,Penjualan Produk,Transaksi Saturday
+2026-05-31,Penjualan Kopi & Snack - Shift Siang,7809804,income,Penjualan Produk,Transaksi Sunday
+2026-06-01,Penjualan Kopi & Snack - Shift Pagi,4575885,income,Penjualan Produk,Transaksi Monday
+2026-06-03,Penjualan Kopi & Snack - Shift Sore,3297345,income,Penjualan Produk,Transaksi Wednesday
+2026-06-04,Penjualan Kopi & Snack - Shift Sore,4839229,income,Penjualan Produk,Transaksi Thursday
+2026-06-04,Kebersihan & Sanitasi,857081,expense,Biaya Operasional Lain,
+2026-06-05,Penjualan Kopi & Snack - Shift Pagi,2705254,income,Penjualan Produk,Transaksi Friday
+2026-06-05,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan June
+2026-06-06,Penjualan Kopi & Snack - Shift Pagi,6094739,income,Penjualan Produk,Transaksi Saturday
+2026-06-07,Penjualan Kopi & Snack - Shift Pagi,6251238,income,Penjualan Produk,Transaksi Sunday
+2026-06-08,Penjualan Kopi & Snack - Shift Sore,4171568,income,Penjualan Produk,Transaksi Monday
+2026-06-08,Workshop Barista,13818025,income,Penjualan Jasa,Event khusus
+2026-06-09,Penjualan Kopi & Snack - Shift Siang,3490098,income,Penjualan Produk,Transaksi Tuesday
+2026-06-10,Penjualan Kopi & Snack - Shift Pagi,4104393,income,Penjualan Produk,Transaksi Wednesday
+2026-06-11,Penjualan Kopi & Snack - Shift Pagi,3039748,income,Penjualan Produk,Transaksi Thursday
+2026-06-12,Penjualan Kopi & Snack - Shift Sore,4873337,income,Penjualan Produk,Transaksi Friday
+2026-06-13,Penjualan Kopi & Snack - Shift Siang,5018471,income,Penjualan Produk,Transaksi Saturday
+2026-06-13,Biaya Admin Bank,63749,expense,Pajak & Admin Bank,
+2026-06-14,Penjualan Kopi & Snack - Shift Pagi,6844817,income,Penjualan Produk,Transaksi Sunday
+2026-06-15,Penjualan Kopi & Snack - Shift Siang,4286325,income,Penjualan Produk,Transaksi Monday
+2026-06-15,Listrik PLN,2866508,expense,"Utilitas (Listrik, Air, Internet)",
+2026-06-15,Air PDAM + Internet,797225,expense,"Utilitas (Listrik, Air, Internet)",
+2026-06-16,Penjualan Kopi & Snack - Shift Sore,3338840,income,Penjualan Produk,Transaksi Tuesday
+2026-06-17,Penjualan Kopi & Snack - Shift Pagi,4830332,income,Penjualan Produk,Transaksi Wednesday
+2026-06-18,Penjualan Kopi & Snack - Shift Pagi,2300985,income,Penjualan Produk,Transaksi Thursday
+2026-06-18,Perbaikan AC,2529986,expense,Biaya Operasional Lain,
+2026-06-19,Penjualan Kopi & Snack - Shift Sore,4828039,income,Penjualan Produk,Transaksi Friday
+2026-06-20,Penjualan Kopi & Snack - Shift Pagi,6151159,income,Penjualan Produk,Transaksi Saturday
+2026-06-20,Bayar Supplier Kopi Robusta - Lampung,5418572,expense,Bahan Baku,
+2026-06-20,Perbaikan AC,2261636,expense,Biaya Operasional Lain,
+2026-06-21,Penjualan Kopi & Snack - Shift Siang,5502245,income,Penjualan Produk,Transaksi Sunday
+2026-06-21,Workshop Barista,13541490,income,Penjualan Jasa,Event khusus
+2026-06-21,Bayar Supplier Gula & Sirup,6526554,expense,Bahan Baku,
+2026-06-22,Penjualan Kopi & Snack - Shift Pagi,4996999,income,Penjualan Produk,Transaksi Monday
+2026-06-23,Penjualan Kopi & Snack - Shift Sore,2184365,income,Penjualan Produk,Transaksi Tuesday
+2026-06-23,Workshop Barista,13449051,income,Penjualan Jasa,Event khusus
+2026-06-24,Penjualan Kopi & Snack - Shift Sore,3512729,income,Penjualan Produk,Transaksi Wednesday
+2026-06-24,Bayar Supplier Kopi Robusta - Lampung,5420943,expense,Bahan Baku,
+2026-06-25,Penjualan Kopi & Snack - Shift Pagi,4450624,income,Penjualan Produk,Transaksi Thursday
+2026-06-26,Penjualan Kopi & Snack - Shift Siang,3946535,income,Penjualan Produk,Transaksi Friday
+2026-06-26,Gaji Barista (3 orang) - June,15000000,expense,Gaji Karyawan,
+2026-06-26,Gaji Kasir (2 orang) - June,8000000,expense,Gaji Karyawan,
+2026-06-26,Gaji Kitchen Staff (2 orang) - June,7000000,expense,Gaji Karyawan,
+2026-06-26,Gaji Manager - June,6000000,expense,Gaji Karyawan,
+2026-06-27,Penjualan Kopi & Snack - Shift Siang,7162208,income,Penjualan Produk,Transaksi Saturday
+2026-06-27,Bayar Supplier Kopi Robusta - Lampung,7817972,expense,Bahan Baku,
+2026-06-29,Penjualan Kopi & Snack - Shift Sore,3408857,income,Penjualan Produk,Transaksi Monday
+2026-06-30,Penjualan Grosir Biji Kopi,10031899,income,Penjualan Produk,Event khusus
+2026-07-01,Penjualan Kopi & Snack - Shift Sore,2814166,income,Penjualan Produk,Transaksi Wednesday
+2026-07-02,Penjualan Kopi & Snack - Shift Pagi,3836672,income,Penjualan Produk,Transaksi Thursday
+2026-07-02,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan July
+2026-07-03,Penjualan Kopi & Snack - Shift Siang,3727580,income,Penjualan Produk,Transaksi Friday
+2026-07-03,Giveaway Event Ulang Tahun,4757765,expense,Marketing & Promosi,
+2026-07-04,Penjualan Kopi & Snack - Shift Sore,6793422,income,Penjualan Produk,Transaksi Saturday
+2026-07-04,Kebersihan & Sanitasi,542842,expense,Biaya Operasional Lain,
+2026-07-05,Penjualan Kopi & Snack - Shift Pagi,6070635,income,Penjualan Produk,Transaksi Sunday
+2026-07-06,Penjualan Kopi & Snack - Shift Pagi,3739877,income,Penjualan Produk,Transaksi Monday
+2026-07-06,Workshop Barista,13554123,income,Penjualan Jasa,Event khusus
+2026-07-07,Penjualan Kopi & Snack - Shift Siang,4737119,income,Penjualan Produk,Transaksi Tuesday
+2026-07-08,Penjualan Kopi & Snack - Shift Pagi,3008479,income,Penjualan Produk,Transaksi Wednesday
+2026-07-09,Penjualan Kopi & Snack - Shift Siang,4596539,income,Penjualan Produk,Transaksi Thursday
+2026-07-11,Penjualan Kopi & Snack - Shift Siang,6973443,income,Penjualan Produk,Transaksi Saturday
+2026-07-12,Penjualan Kopi & Snack - Shift Sore,7570508,income,Penjualan Produk,Transaksi Sunday
+2026-07-12,Listrik PLN,2978938,expense,"Utilitas (Listrik, Air, Internet)",
+2026-07-12,Air PDAM + Internet,585701,expense,"Utilitas (Listrik, Air, Internet)",
+2026-07-13,Penjualan Kopi & Snack - Shift Siang,2499692,income,Penjualan Produk,Transaksi Monday
+2026-07-14,Penjualan Kopi & Snack - Shift Siang,2827063,income,Penjualan Produk,Transaksi Tuesday
+2026-07-15,Penjualan Kopi & Snack - Shift Sore,2040883,income,Penjualan Produk,Transaksi Wednesday
+2026-07-16,Penjualan Kopi & Snack - Shift Pagi,3479425,income,Penjualan Produk,Transaksi Thursday
+2026-07-17,Penjualan Kopi & Snack - Shift Sore,4738880,income,Penjualan Produk,Transaksi Friday
+2026-07-18,Penjualan Kopi & Snack - Shift Pagi,5868149,income,Penjualan Produk,Transaksi Saturday
+2026-07-18,Bayar Supplier Susu & Krimer,5598556,expense,Bahan Baku,
+2026-07-19,Penjualan Kopi & Snack - Shift Pagi,7384255,income,Penjualan Produk,Transaksi Sunday
+2026-07-20,Penjualan Kopi & Snack - Shift Sore,3910137,income,Penjualan Produk,Transaksi Monday
+2026-07-21,Penjualan Kopi & Snack - Shift Sore,3550321,income,Penjualan Produk,Transaksi Tuesday
+2026-07-23,Bayar Supplier Susu & Krimer,5425564,expense,Bahan Baku,
+2026-07-24,Penjualan Kopi & Snack - Shift Sore,2414021,income,Penjualan Produk,Transaksi Friday
+2026-07-25,Penjualan Kopi & Snack - Shift Pagi,7351915,income,Penjualan Produk,Transaksi Saturday
+2026-07-26,Penjualan Kopi & Snack - Shift Pagi,6895273,income,Penjualan Produk,Transaksi Sunday
+2026-07-27,Penjualan Kopi & Snack - Shift Sore,3775525,income,Penjualan Produk,Transaksi Monday
+2026-07-27,Gaji Barista (3 orang) - July,15000000,expense,Gaji Karyawan,
+2026-07-27,Gaji Kasir (2 orang) - July,8000000,expense,Gaji Karyawan,
+2026-07-27,Gaji Kitchen Staff (2 orang) - July,7000000,expense,Gaji Karyawan,
+2026-07-27,Gaji Manager - July,6000000,expense,Gaji Karyawan,
+2026-07-28,Penjualan Kopi & Snack - Shift Pagi,2640458,income,Penjualan Produk,Transaksi Tuesday
+2026-07-28,Bayar Supplier Susu & Krimer,5659252,expense,Bahan Baku,
+2026-07-30,Penjualan Kopi & Snack - Shift Pagi,4697255,income,Penjualan Produk,Transaksi Thursday
+2026-07-31,Penjualan Kopi & Snack - Shift Sore,3827379,income,Penjualan Produk,Transaksi Friday
+2026-08-01,Penjualan Kopi & Snack - Shift Siang,7820165,income,Penjualan Produk,Transaksi Saturday
+2026-08-01,Catering Event Kantor,11018205,income,Penjualan Jasa,Event khusus
+2026-08-01,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan August
+2026-08-02,Penjualan Kopi & Snack - Shift Pagi,5874259,income,Penjualan Produk,Transaksi Sunday
+2026-08-03,Penjualan Kopi & Snack - Shift Pagi,3417081,income,Penjualan Produk,Transaksi Monday
+2026-08-04,Penjualan Kopi & Snack - Shift Pagi,4044971,income,Penjualan Produk,Transaksi Tuesday
+2026-08-06,Penjualan Kopi & Snack - Shift Siang,2215650,income,Penjualan Produk,Transaksi Thursday
+2026-08-08,Penjualan Kopi & Snack - Shift Pagi,7255478,income,Penjualan Produk,Transaksi Saturday
+2026-08-09,Penjualan Kopi & Snack - Shift Pagi,6173725,income,Penjualan Produk,Transaksi Sunday
+2026-08-09,Workshop Barista,14929064,income,Penjualan Jasa,Event khusus
+2026-08-10,Penjualan Kopi & Snack - Shift Siang,3011080,income,Penjualan Produk,Transaksi Monday
+2026-08-10,Beli Grinder Kopi Premium,8000000,expense,Perlengkapan & Peralatan,Investasi kualitas
+2026-08-11,Penjualan Kopi & Snack - Shift Pagi,2336993,income,Penjualan Produk,Transaksi Tuesday
+2026-08-12,Penjualan Kopi & Snack - Shift Siang,4596288,income,Penjualan Produk,Transaksi Wednesday
+2026-08-12,Bensin Motor Delivery,560924,expense,Transportasi & Pengiriman,
+2026-08-13,Penjualan Kopi & Snack - Shift Pagi,4364071,income,Penjualan Produk,Transaksi Thursday
+2026-08-13,Listrik PLN,2011771,expense,"Utilitas (Listrik, Air, Internet)",
+2026-08-13,Air PDAM + Internet,550507,expense,"Utilitas (Listrik, Air, Internet)",
+2026-08-14,Penjualan Kopi & Snack - Shift Siang,3254738,income,Penjualan Produk,Transaksi Friday
+2026-08-14,Penjualan Grosir Biji Kopi,9648340,income,Penjualan Produk,Event khusus
+2026-08-16,Penjualan Kopi & Snack - Shift Pagi,5528303,income,Penjualan Produk,Transaksi Sunday
+2026-08-16,Workshop Barista,13816046,income,Penjualan Jasa,Event khusus
+2026-08-16,Bensin Motor Delivery,491420,expense,Transportasi & Pengiriman,
+2026-08-17,Penjualan Kopi & Snack - Shift Sore,3896886,income,Penjualan Produk,Transaksi Monday
+2026-08-17,Bayar Supplier Kopi Arabica - Toraja,7435493,expense,Bahan Baku,
+2026-08-18,Penjualan Kopi & Snack - Shift Pagi,3716797,income,Penjualan Produk,Transaksi Tuesday
+2026-08-19,Penjualan Kopi & Snack - Shift Pagi,2418373,income,Penjualan Produk,Transaksi Wednesday
+2026-08-19,Bayar Supplier Snack & Pastry,6954362,expense,Bahan Baku,
+2026-08-20,Penjualan Kopi & Snack - Shift Sore,4431004,income,Penjualan Produk,Transaksi Thursday
+2026-08-21,Penjualan Kopi & Snack - Shift Pagi,3130896,income,Penjualan Produk,Transaksi Friday
+2026-08-22,Penjualan Kopi & Snack - Shift Siang,6848427,income,Penjualan Produk,Transaksi Saturday
+2026-08-22,Bayar Supplier Kopi Robusta - Lampung,5904162,expense,Bahan Baku,
+2026-08-22,Bayar Supplier Kopi Arabica - Toraja,6971183,expense,Bahan Baku,
+2026-08-22,Biaya Admin Bank,145060,expense,Pajak & Admin Bank,
+2026-08-23,Penjualan Kopi & Snack - Shift Sore,5537515,income,Penjualan Produk,Transaksi Sunday
+2026-08-24,Penjualan Kopi & Snack - Shift Pagi,4118604,income,Penjualan Produk,Transaksi Monday
+2026-08-25,Penjualan Kopi & Snack - Shift Pagi,2718784,income,Penjualan Produk,Transaksi Tuesday
+2026-08-27,Penjualan Kopi & Snack - Shift Pagi,2828820,income,Penjualan Produk,Transaksi Thursday
+2026-08-27,Gaji Barista (3 orang) - August,15000000,expense,Gaji Karyawan,
+2026-08-27,Gaji Kasir (2 orang) - August,8000000,expense,Gaji Karyawan,
+2026-08-27,Gaji Kitchen Staff (2 orang) - August,7000000,expense,Gaji Karyawan,
+2026-08-27,Gaji Manager - August,6000000,expense,Gaji Karyawan,
+2026-08-28,Penjualan Kopi & Snack - Shift Sore,3851498,income,Penjualan Produk,Transaksi Friday
+2026-08-28,Pajak Restoran,1837376,expense,Pajak & Admin Bank,
+2026-08-31,Penjualan Kopi & Snack - Shift Pagi,2093079,income,Penjualan Produk,Transaksi Monday
+2026-09-01,Penjualan Kopi & Snack - Shift Siang,4083495,income,Penjualan Produk,Transaksi Tuesday
+2026-09-01,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan September
+2026-09-02,Penjualan Kopi & Snack - Shift Pagi,3286217,income,Penjualan Produk,Transaksi Wednesday
+2026-09-03,Penjualan Kopi & Snack - Shift Siang,2644638,income,Penjualan Produk,Transaksi Thursday
+2026-09-05,Penjualan Kopi & Snack - Shift Siang,6555802,income,Penjualan Produk,Transaksi Saturday
+2026-09-07,Penjualan Kopi & Snack - Shift Siang,2011027,income,Penjualan Produk,Transaksi Monday
+2026-09-08,Penjualan Kopi & Snack - Shift Siang,3655196,income,Penjualan Produk,Transaksi Tuesday
+2026-09-09,Penjualan Kopi & Snack - Shift Siang,4249519,income,Penjualan Produk,Transaksi Wednesday
+2026-09-09,Perbaikan AC,2828540,expense,Biaya Operasional Lain,
+2026-09-10,Penjualan Kopi & Snack - Shift Pagi,2119878,income,Penjualan Produk,Transaksi Thursday
+2026-09-11,Penjualan Kopi & Snack - Shift Siang,2210790,income,Penjualan Produk,Transaksi Friday
+2026-09-11,Bayar Supplier Kopi Robusta - Lampung,6841284,expense,Bahan Baku,
+2026-09-12,Penjualan Kopi & Snack - Shift Sore,6400731,income,Penjualan Produk,Transaksi Saturday
+2026-09-13,Penjualan Kopi & Snack - Shift Sore,6028306,income,Penjualan Produk,Transaksi Sunday
+2026-09-13,Listrik PLN,2966755,expense,"Utilitas (Listrik, Air, Internet)",
+2026-09-13,Air PDAM + Internet,569184,expense,"Utilitas (Listrik, Air, Internet)",
+2026-09-14,Penjualan Kopi & Snack - Shift Pagi,2650302,income,Penjualan Produk,Transaksi Monday
+2026-09-16,Penjualan Kopi & Snack - Shift Siang,3180484,income,Penjualan Produk,Transaksi Wednesday
+2026-09-16,Bayar Supplier Susu & Krimer,6732795,expense,Bahan Baku,
+2026-09-17,Penjualan Kopi & Snack - Shift Sore,2759937,income,Penjualan Produk,Transaksi Thursday
+2026-09-18,Penjualan Kopi & Snack - Shift Pagi,2040087,income,Penjualan Produk,Transaksi Friday
+2026-09-20,Penjualan Kopi & Snack - Shift Pagi,5922032,income,Penjualan Produk,Transaksi Sunday
+2026-09-20,Bayar Supplier Kopi Arabica - Toraja,6999782,expense,Bahan Baku,
+2026-09-21,Bayar Supplier Susu & Krimer,7932010,expense,Bahan Baku,
+2026-09-22,Penjualan Kopi & Snack - Shift Sore,2310207,income,Penjualan Produk,Transaksi Tuesday
+2026-09-22,Kebersihan & Sanitasi,791775,expense,Biaya Operasional Lain,
+2026-09-23,Penjualan Kopi & Snack - Shift Pagi,2760875,income,Penjualan Produk,Transaksi Wednesday
+2026-09-25,Penjualan Kopi & Snack - Shift Pagi,3330543,income,Penjualan Produk,Transaksi Friday
+2026-09-25,Gaji Barista (3 orang) - September,15000000,expense,Gaji Karyawan,
+2026-09-25,Gaji Kasir (2 orang) - September,8000000,expense,Gaji Karyawan,
+2026-09-25,Gaji Kitchen Staff (2 orang) - September,7000000,expense,Gaji Karyawan,
+2026-09-25,Gaji Manager - September,6000000,expense,Gaji Karyawan,
+2026-09-26,Penjualan Kopi & Snack - Shift Pagi,6435310,income,Penjualan Produk,Transaksi Saturday
+2026-09-28,Penjualan Kopi & Snack - Shift Sore,2306384,income,Penjualan Produk,Transaksi Monday
+2026-09-28,Kebersihan & Sanitasi,591868,expense,Biaya Operasional Lain,
+2026-09-29,Penjualan Kopi & Snack - Shift Siang,2164611,income,Penjualan Produk,Transaksi Tuesday
+2026-09-30,Penjualan Kopi & Snack - Shift Siang,4524326,income,Penjualan Produk,Transaksi Wednesday
+2026-10-01,Penjualan Kopi & Snack - Shift Pagi,3035247,income,Penjualan Produk,Transaksi Thursday
+2026-10-02,Penjualan Kopi & Snack - Shift Siang,2253036,income,Penjualan Produk,Transaksi Friday
+2026-10-03,Penjualan Kopi & Snack - Shift Siang,6764334,income,Penjualan Produk,Transaksi Saturday
+2026-10-03,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan October
+2026-10-04,Penjualan Kopi & Snack - Shift Siang,5548839,income,Penjualan Produk,Transaksi Sunday
+2026-10-05,Penjualan Kopi & Snack - Shift Siang,2346529,income,Penjualan Produk,Transaksi Monday
+2026-10-05,Bayar Supplier Kopi Robusta - Lampung,6960310,expense,Bahan Baku,
+2026-10-06,Penjualan Kopi & Snack - Shift Siang,4626390,income,Penjualan Produk,Transaksi Tuesday
+2026-10-07,Bensin Motor Delivery,472434,expense,Transportasi & Pengiriman,
+2026-10-09,Penjualan Kopi & Snack - Shift Siang,3012491,income,Penjualan Produk,Transaksi Friday
+2026-10-11,Penjualan Kopi & Snack - Shift Sore,6742427,income,Penjualan Produk,Transaksi Sunday
+2026-10-12,Penjualan Kopi & Snack - Shift Pagi,4610622,income,Penjualan Produk,Transaksi Monday
+2026-10-12,Listrik PLN,2117226,expense,"Utilitas (Listrik, Air, Internet)",
+2026-10-12,Air PDAM + Internet,630914,expense,"Utilitas (Listrik, Air, Internet)",
+2026-10-12,Bayar Supplier Kopi Arabica - Toraja,6598552,expense,Bahan Baku,
+2026-10-13,Penjualan Kopi & Snack - Shift Pagi,3440670,income,Penjualan Produk,Transaksi Tuesday
+2026-10-13,Penjualan Grosir Biji Kopi,9545055,income,Penjualan Produk,Event khusus
+2026-10-14,Penjualan Kopi & Snack - Shift Siang,2681359,income,Penjualan Produk,Transaksi Wednesday
+2026-10-15,Penjualan Kopi & Snack - Shift Pagi,2388494,income,Penjualan Produk,Transaksi Thursday
+2026-10-16,Penjualan Kopi & Snack - Shift Siang,4656280,income,Penjualan Produk,Transaksi Friday
+2026-10-17,Cetak Flyer & Banner Promo,1220581,expense,Marketing & Promosi,
+2026-10-18,Penjualan Kopi & Snack - Shift Siang,5948433,income,Penjualan Produk,Transaksi Sunday
+2026-10-19,Penjualan Kopi & Snack - Shift Siang,3653643,income,Penjualan Produk,Transaksi Monday
+2026-10-20,Penjualan Kopi & Snack - Shift Pagi,3081210,income,Penjualan Produk,Transaksi Tuesday
+2026-10-21,Penjualan Kopi & Snack - Shift Siang,3773868,income,Penjualan Produk,Transaksi Wednesday
+2026-10-21,Bayar Supplier Snack & Pastry,5899901,expense,Bahan Baku,
+2026-10-24,Penjualan Kopi & Snack - Shift Pagi,6074694,income,Penjualan Produk,Transaksi Saturday
+2026-10-24,Kebersihan & Sanitasi,940464,expense,Biaya Operasional Lain,
+2026-10-25,Penjualan Kopi & Snack - Shift Sore,5817305,income,Penjualan Produk,Transaksi Sunday
+2026-10-25,Bayar Supplier Kopi Arabica - Toraja,6898237,expense,Bahan Baku,
+2026-10-26,Penjualan Kopi & Snack - Shift Siang,3517904,income,Penjualan Produk,Transaksi Monday
+2026-10-27,Gaji Barista (3 orang) - October,15000000,expense,Gaji Karyawan,
+2026-10-27,Gaji Kasir (2 orang) - October,8000000,expense,Gaji Karyawan,
+2026-10-27,Gaji Kitchen Staff (2 orang) - October,7000000,expense,Gaji Karyawan,
+2026-10-27,Gaji Manager - October,6000000,expense,Gaji Karyawan,
+2026-10-29,Penjualan Kopi & Snack - Shift Sore,2979439,income,Penjualan Produk,Transaksi Thursday
+2026-10-31,Penjualan Kopi & Snack - Shift Pagi,5654759,income,Penjualan Produk,Transaksi Saturday
+2026-11-01,Penjualan Kopi & Snack - Shift Pagi,5793790,income,Penjualan Produk,Transaksi Sunday
+2026-11-02,Penjualan Kopi & Snack - Shift Siang,2864882,income,Penjualan Produk,Transaksi Monday
+2026-11-03,Penjualan Kopi & Snack - Shift Pagi,2878656,income,Penjualan Produk,Transaksi Tuesday
+2026-11-04,Penjualan Kopi & Snack - Shift Siang,3473913,income,Penjualan Produk,Transaksi Wednesday
+2026-11-05,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan November
+2026-11-05,Renovasi Interior & Furniture,12000000,expense,Perlengkapan & Peralatan,Refresh tampilan
+2026-11-06,Penjualan Kopi & Snack - Shift Siang,2371314,income,Penjualan Produk,Transaksi Friday
+2026-11-07,Penjualan Kopi & Snack - Shift Sore,7767309,income,Penjualan Produk,Transaksi Saturday
+2026-11-08,Penjualan Kopi & Snack - Shift Siang,5602658,income,Penjualan Produk,Transaksi Sunday
+2026-11-09,Penjualan Kopi & Snack - Shift Sore,2645043,income,Penjualan Produk,Transaksi Monday
+2026-11-11,Penjualan Kopi & Snack - Shift Sore,4831866,income,Penjualan Produk,Transaksi Wednesday
+2026-11-11,Listrik PLN,2485511,expense,"Utilitas (Listrik, Air, Internet)",
+2026-11-11,Air PDAM + Internet,722340,expense,"Utilitas (Listrik, Air, Internet)",
+2026-11-11,Bayar Supplier Kopi Arabica - Toraja,5044128,expense,Bahan Baku,
+2026-11-12,Penjualan Kopi & Snack - Shift Pagi,4111366,income,Penjualan Produk,Transaksi Thursday
+2026-11-13,Penjualan Kopi & Snack - Shift Pagi,2340264,income,Penjualan Produk,Transaksi Friday
+2026-11-14,Penjualan Kopi & Snack - Shift Pagi,5288544,income,Penjualan Produk,Transaksi Saturday
+2026-11-15,Penjualan Kopi & Snack - Shift Sore,6354543,income,Penjualan Produk,Transaksi Sunday
+2026-11-16,Penjualan Kopi & Snack - Shift Siang,3217774,income,Penjualan Produk,Transaksi Monday
+2026-11-16,Bayar Supplier Gula & Sirup,7010683,expense,Bahan Baku,
+2026-11-17,Penjualan Kopi & Snack - Shift Sore,3418975,income,Penjualan Produk,Transaksi Tuesday
+2026-11-18,Penjualan Kopi & Snack - Shift Siang,4239801,income,Penjualan Produk,Transaksi Wednesday
+2026-11-20,Penjualan Kopi & Snack - Shift Siang,4771573,income,Penjualan Produk,Transaksi Friday
+2026-11-21,Penjualan Kopi & Snack - Shift Sore,5362157,income,Penjualan Produk,Transaksi Saturday
+2026-11-21,Bensin Motor Delivery,468107,expense,Transportasi & Pengiriman,
+2026-11-22,Penjualan Kopi & Snack - Shift Siang,5641736,income,Penjualan Produk,Transaksi Sunday
+2026-11-23,Penjualan Kopi & Snack - Shift Siang,2602680,income,Penjualan Produk,Transaksi Monday
+2026-11-24,Penjualan Kopi & Snack - Shift Siang,3871281,income,Penjualan Produk,Transaksi Tuesday
+2026-11-26,Bayar Supplier Susu & Krimer,5473822,expense,Bahan Baku,
+2026-11-27,Penjualan Kopi & Snack - Shift Siang,2275220,income,Penjualan Produk,Transaksi Friday
+2026-11-27,Pajak Restoran,1840880,expense,Pajak & Admin Bank,
+2026-11-28,Gaji Barista (3 orang) - November,15000000,expense,Gaji Karyawan,
+2026-11-28,Gaji Kasir (2 orang) - November,8000000,expense,Gaji Karyawan,
+2026-11-28,Gaji Kitchen Staff (2 orang) - November,7000000,expense,Gaji Karyawan,
+2026-11-28,Gaji Manager - November,6000000,expense,Gaji Karyawan,
+2026-11-29,Penjualan Kopi & Snack - Shift Siang,6199025,income,Penjualan Produk,Transaksi Sunday
+2026-11-30,Penjualan Kopi & Snack - Shift Sore,4943129,income,Penjualan Produk,Transaksi Monday
+2026-12-01,Sewa Kios Bulanan,15000000,expense,Sewa Tempat,Bulan December
+2026-12-02,Penjualan Kopi & Snack - Shift Siang,3616935,income,Penjualan Produk,Transaksi Wednesday
+2026-12-03,Penjualan Kopi & Snack - Shift Sore,6080903,income,Penjualan Produk,Transaksi Thursday
+2026-12-04,Penjualan Kopi & Snack - Shift Siang,5360816,income,Penjualan Produk,Transaksi Friday
+2026-12-04,Bayar Supplier Snack & Pastry,7157651,expense,Bahan Baku,
+2026-12-05,Penjualan Kopi & Snack - Shift Siang,9773688,income,Penjualan Produk,Transaksi Saturday
+2026-12-05,Biaya Admin Bank,79139,expense,Pajak & Admin Bank,
+2026-12-06,Penjualan Kopi & Snack - Shift Pagi,7534465,income,Penjualan Produk,Transaksi Sunday
+2026-12-07,Iklan Instagram Ads - 1 Bulan,2001642,expense,Marketing & Promosi,
+2026-12-08,Penjualan Kopi & Snack - Shift Sore,4683762,income,Penjualan Produk,Transaksi Tuesday
+2026-12-09,Penjualan Kopi & Snack - Shift Pagi,3513403,income,Penjualan Produk,Transaksi Wednesday
+2026-12-10,Penjualan Kopi & Snack - Shift Pagi,3331525,income,Penjualan Produk,Transaksi Thursday
+2026-12-10,Listrik PLN,2629384,expense,"Utilitas (Listrik, Air, Internet)",
+2026-12-10,Air PDAM + Internet,539135,expense,"Utilitas (Listrik, Air, Internet)",
+2026-12-10,Bayar Supplier Kopi Arabica - Toraja,7137078,expense,Bahan Baku,
+2026-12-11,Penjualan Kopi & Snack - Shift Sore,4820753,income,Penjualan Produk,Transaksi Friday
+2026-12-12,Penjualan Kopi & Snack - Shift Sore,10323653,income,Penjualan Produk,Transaksi Saturday
+2026-12-13,Penjualan Kopi & Snack - Shift Sore,9167824,income,Penjualan Produk,Transaksi Sunday
+2026-12-14,Penjualan Kopi & Snack - Shift Sore,5874066,income,Penjualan Produk,Transaksi Monday
+2026-12-15,Penjualan Kopi & Snack - Shift Pagi,3966371,income,Penjualan Produk,Transaksi Tuesday
+2026-12-19,Penjualan Kopi & Snack - Shift Pagi,8913841,income,Penjualan Produk,Transaksi Saturday
+2026-12-20,Penjualan Kopi & Snack - Shift Siang,6878894,income,Penjualan Produk,Transaksi Sunday
+2026-12-21,Penjualan Kopi & Snack - Shift Pagi,4971644,income,Penjualan Produk,Transaksi Monday
+2026-12-22,Bayar Supplier Susu & Krimer,7519755,expense,Bahan Baku,
+2026-12-23,Penjualan Kopi & Snack - Shift Sore,5471784,income,Penjualan Produk,Transaksi Wednesday
+2026-12-25,Penjualan Kopi & Snack - Shift Sore,6262947,income,Penjualan Produk,Transaksi Friday
+2026-12-26,Penjualan Kopi & Snack - Shift Siang,7851305,income,Penjualan Produk,Transaksi Saturday
+2026-12-27,Penjualan Kopi & Snack - Shift Pagi,6683777,income,Penjualan Produk,Transaksi Sunday
+2026-12-27,Perbaikan AC,1605742,expense,Biaya Operasional Lain,
+2026-12-28,Gaji Barista (3 orang) - December,15000000,expense,Gaji Karyawan,
+2026-12-28,Gaji Kasir (2 orang) - December,8000000,expense,Gaji Karyawan,
+2026-12-28,Gaji Kitchen Staff (2 orang) - December,7000000,expense,Gaji Karyawan,
+2026-12-28,Gaji Manager - December,6000000,expense,Gaji Karyawan,
+2026-12-29,Penjualan Kopi & Snack - Shift Sore,3623113,income,Penjualan Produk,Transaksi Tuesday

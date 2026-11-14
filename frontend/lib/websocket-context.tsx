@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  ReactNode,
+} from "react";
 import { toast } from "./toast";
 import { getAccessToken } from "./auth";
 
@@ -32,7 +39,9 @@ interface WebSocketProviderProps {
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-  const subscribersRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
+  const subscribersRef = useRef<Map<string, Set<(data: any) => void>>>(
+    new Map(),
+  );
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const reconnectAttemptsRef = useRef(0);
   const MAX_RECONNECT_ATTEMPTS = 5;
@@ -57,7 +66,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     // WebSocket URL with token as query param
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
     const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(token)}`;
-    
+
     try {
       const ws = new WebSocket(wsUrlWithToken);
 
@@ -86,7 +95,12 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       };
 
       ws.onerror = (error) => {
-        console.error("[WebSocket] Error:", error);
+        if (process.env.NEXT_PUBLIC_APP_ENV === "development") {
+          console.warn(
+            "[WebSocket] Connection error (non-critical):",
+            error.type,
+          );
+        }
       };
 
       ws.onclose = () => {
@@ -98,7 +112,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
           reconnectAttemptsRef.current++;
           console.log(
-            `[WebSocket] Reconnecting... (attempt ${reconnectAttemptsRef.current})`
+            `[WebSocket] Reconnecting... (attempt ${reconnectAttemptsRef.current})`,
           );
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
@@ -107,7 +121,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
           toast.warning(
             "Koneksi Real-time Terputus",
             "Refresh halaman untuk mencoba kembali.",
-            { duration: 0 }
+            { duration: 0 },
           );
         }
       };
@@ -125,7 +139,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         toast.error(
           message.data.title || "Peringatan Rasio",
           message.data.message || "Terjadi perubahan pada rasio keuangan",
-          { duration: 10000 }
+          { duration: 10000 },
         );
         break;
 
@@ -133,7 +147,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         toast.success(
           "Transaksi Tercatat",
           "Transaksi baru telah ditambahkan. Dashboard akan diperbarui.",
-          { duration: 5000 }
+          { duration: 5000 },
         );
         break;
 
@@ -141,7 +155,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         toast.info(
           "Neraca Diperbarui",
           "Saldo neraca telah diupdate. Rasio akan dihitung ulang.",
-          { duration: 5000 }
+          { duration: 5000 },
         );
         break;
 

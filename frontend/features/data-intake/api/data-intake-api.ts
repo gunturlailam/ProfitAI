@@ -35,7 +35,9 @@ export const dataIntakeApi = {
   },
 
   getBalanceSnapshot: async (id: number): Promise<BalanceSnapshot> => {
-    const { data } = await apiClient.get<BalanceSnapshot>(`/balance-sheets/${id}`);
+    const { data } = await apiClient.get<BalanceSnapshot>(
+      `/balance-sheets/${id}`,
+    );
     return data;
   },
 
@@ -64,15 +66,23 @@ export const dataIntakeApi = {
   },
 
   listPeriods: async (): Promise<AccountingPeriod[]> => {
-    const { data } = await apiClient.get<AccountingPeriod[]>("/accounting-periods");
+    const { data } = await apiClient.get<AccountingPeriod[]>(
+      "/accounting-periods",
+    );
     return data;
   },
 
-  createPeriod: async (periodFrom: string, periodTo: string): Promise<AccountingPeriod> => {
-    const { data } = await apiClient.post<AccountingPeriod>("/accounting-periods", {
-      period_from: dateOnly(periodFrom),
-      period_to: dateOnly(periodTo),
-    });
+  createPeriod: async (
+    periodFrom: string,
+    periodTo: string,
+  ): Promise<AccountingPeriod> => {
+    const { data } = await apiClient.post<AccountingPeriod>(
+      "/accounting-periods",
+      {
+        period_from: dateOnly(periodFrom),
+        period_to: dateOnly(periodTo),
+      },
+    );
     return data;
   },
 
@@ -104,7 +114,10 @@ export const dataIntakeApi = {
     id: number,
     payload: Partial<ReceivablePayload>,
   ): Promise<Receivable> => {
-    const { data } = await apiClient.patch<Receivable>(`/receivables/${id}`, payload);
+    const { data } = await apiClient.patch<Receivable>(
+      `/receivables/${id}`,
+      payload,
+    );
     return data;
   },
 
@@ -134,7 +147,10 @@ export const dataIntakeApi = {
   createInventoryItem: async (
     payload: InventoryItemPayload,
   ): Promise<InventoryItem> => {
-    const { data } = await apiClient.post<InventoryItem>("/inventory-items", payload);
+    const { data } = await apiClient.post<InventoryItem>(
+      "/inventory-items",
+      payload,
+    );
     return data;
   },
 
@@ -180,7 +196,10 @@ export const dataIntakeApi = {
     id: number,
     payload: Partial<FixedAssetPayload>,
   ): Promise<FixedAsset> => {
-    const { data } = await apiClient.patch<FixedAsset>(`/fixed-assets/${id}`, payload);
+    const { data } = await apiClient.patch<FixedAsset>(
+      `/fixed-assets/${id}`,
+      payload,
+    );
     return data;
   },
 
@@ -197,7 +216,10 @@ export const dataIntakeApi = {
     return data;
   },
 
-  updateLoan: async (id: number, payload: Partial<LoanPayload>): Promise<Loan> => {
+  updateLoan: async (
+    id: number,
+    payload: Partial<LoanPayload>,
+  ): Promise<Loan> => {
     const { data } = await apiClient.patch<Loan>(`/loans/${id}`, payload);
     return data;
   },
@@ -208,6 +230,11 @@ export const dataIntakeApi = {
     const { data } = await apiClient.post<ImportPreviewResponse>(
       "/imports/transactions/preview",
       form,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
     );
     return data;
   },
