@@ -1,5 +1,6 @@
 import hashlib, hmac, secrets
-from fastapi import Depends, HTTPException
+from datetime import datetime, timezone
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPBearer
 from .db import get_db
 from . import models
@@ -22,12 +23,43 @@ def get_current_user(creds=Depends(bearer), db=Depends(get_db)):
     sess = db.get(models.Session, creds.credentials)
     if sess is None:
         raise HTTPException(401, "Invalid token")
+    if sess.expires_at:
+        # Normalize: SQLite stores naive datetimes, PostgreSQL stores with tz
+        exp = sess.expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if exp < datetime.now(timezone.utc):
+            raise HTTPException(401, "Token sudah kedaluwarsa, silakan login ulang")
     return db.get(models.User, sess.user_id)
 
-def get_current_org(user=Depends(get_current_user), db=Depends(get_db)):
-    # org diambil dari keanggotaan user di server, BUKAN dari input client
+def require_superadmin(user):
+    if not getattr(user, 'is_superadmin', False):
+        raise HTTPException(403, "Akses hanya untuk Super Admin")
+
+def get_current_org(request: Request, user=Depends(get_current_user), db=Depends(get_db)):
+    org_id_header = request.headers.get("X-Organization-ID")
+    if org_id_header:
+        try:
+            requested_org_id = int(org_id_header)
+        except ValueError:
+            raise HTTPException(400, "X-Organization-ID tidak valid")
+        m = db.query(models.Membership).filter_by(
+            user_id=user.id, organization_id=requested_org_id
+        ).first()
+        if not m:
+            raise HTTPException(403, "Anda bukan anggota organisasi tersebut")
+        # Cek apakah org masih aktif (kecuali superadmin)
+        org = db.query(models.Organization).filter_by(id=requested_org_id).first()
+        if org and not org.is_active and not getattr(user, 'is_superadmin', False):
+            raise HTTPException(403, "Organisasi ini telah dinonaktifkan. Hubungi administrator.")
+        return requested_org_id
+    # Fallback: ambil org pertama (untuk backward compatibility)
     m = (db.query(models.Membership).filter_by(user_id=user.id)
          .order_by(models.Membership.organization_id).first())
     if m is None:
-        raise HTTPException(403, "User has no organization")
+        raise HTTPException(403, "User tidak memiliki organisasi")
+    # Cek apakah org masih aktif (kecuali superadmin)
+    org = db.query(models.Organization).filter_by(id=m.organization_id).first()
+    if org and not org.is_active and not getattr(user, 'is_superadmin', False):
+        raise HTTPException(403, "Organisasi ini telah dinonaktifkan. Hubungi administrator.")
     return m.organization_id

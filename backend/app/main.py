@@ -1,5 +1,7 @@
-import csv, hashlib, io, secrets, uuid
-from datetime import date, datetime, timezone
+﻿import csv, hashlib, io, os, secrets, time, uuid
+from collections import defaultdict
+from contextlib import asynccontextmanager
+from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Query, Request, UploadFile, File
@@ -9,7 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from .db import engine, get_db, Base
 from . import models, schemas
-from .security import hash_password, verify_password, get_current_user, get_current_org
+from .security import hash_password, verify_password, get_current_user, get_current_org, bearer, require_superadmin
 from .financial_engine import (
     summarize,
     calculate_profit_loss,
@@ -26,13 +28,20 @@ from . import ratio_narrative
 from . import ratio_insights
 from .ratio_engine import RATIO_META
 
-app = FastAPI(title="ProfitAI API", version="0.1.0")
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"],
-                   allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
-@app.on_event("startup")
-def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
+    yield
+
+app = FastAPI(title="ProfitAI API", version="0.1.0", lifespan=lifespan)
+
+_cors_origins_raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
+app.add_middleware(CORSMiddleware,
+                   allow_origins=_cors_origins,
+                   allow_credentials=True,
+                   allow_methods=["*"],
+                   allow_headers=["*"])
 
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
@@ -40,6 +49,20 @@ async def add_request_id(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Request-ID"] = request.state.request_id
     return response
+
+# In-memory rate limiter untuk auth endpoints
+_auth_attempts: dict = defaultdict(list)
+_AUTH_LIMIT = 10        # max attempts
+_AUTH_WINDOW = 60       # detik
+
+def _check_rate_limit(ip: str):
+    now = time.time()
+    attempts = _auth_attempts[ip]
+    # Buang attempts yang sudah expired
+    _auth_attempts[ip] = [t for t in attempts if now - t < _AUTH_WINDOW]
+    if len(_auth_attempts[ip]) >= _AUTH_LIMIT:
+        raise HTTPException(429, "Terlalu banyak percobaan login. Coba lagi dalam 1 menit.")
+    _auth_attempts[ip].append(now)
 
 @app.exception_handler(HTTPException)
 async def http_error(request: Request, exc: HTTPException):
@@ -106,6 +129,7 @@ def list_models():
 
 @app.post("/api/v1/auth/register", status_code=201)
 def register(p: schemas.RegisterIn, request: Request, db=Depends(get_db)):
+    _check_rate_limit(request.client.host if request.client else "unknown")
     email = p.email.strip().lower()
     if "@" not in email:
         raise HTTPException(422, "Email tidak valid")
@@ -126,24 +150,78 @@ def register(p: schemas.RegisterIn, request: Request, db=Depends(get_db)):
 
 @app.post("/api/v1/auth/login")
 def login(p: schemas.LoginIn, request: Request, db=Depends(get_db)):
+    _check_rate_limit(request.client.host if request.client else "unknown")
     user = db.query(models.User).filter_by(email=p.email.strip().lower()).first()
     if not user or not verify_password(p.password, user.password_hash):
         raise HTTPException(401, "Email atau password salah")
     token = secrets.token_urlsafe(32)
-    db.add(models.Session(token=token, user_id=user.id))
+    db.add(models.Session(token=token, user_id=user.id,
+                          expires_at=datetime.now(timezone.utc) + timedelta(days=7)))
     log_audit(db, None, user.id, "USER_LOGGED_IN", "sessions", None, {"email": user.email})
     db.commit()
-    return {"access_token": token, "token_type": "bearer"}
+
+    # Ambil semua org user beserta role-nya
+    memberships = (db.query(models.Membership)
+                   .filter_by(user_id=user.id)
+                   .order_by(models.Membership.organization_id)
+                   .all())
+    organizations = []
+    for m in memberships:
+        org = db.query(models.Organization).filter_by(id=m.organization_id).first()
+        if org:
+            organizations.append({
+                "organization_id": org.id,
+                "organization_name": org.name,
+                "role": m.role,
+            })
+
+    # Default: org pertama yang di-join (bukan org sendiri jika ada org lain)
+    # Prioritaskan org yang bukan milik sendiri (diinvite) jika ada
+    default_org = organizations[0] if organizations else None
+    if len(organizations) > 1:
+        # Cari org di mana user bukan owner (artinya diinvite)
+        invited = [o for o in organizations if o["role"] != "owner"]
+        if invited:
+            default_org = invited[0]
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "organization_id": default_org["organization_id"] if default_org else None,
+        "organizations": organizations,
+    }
+
+@app.post("/api/v1/auth/logout")
+def logout(creds=Depends(bearer), db=Depends(get_db)):
+    if creds:
+        sess = db.get(models.Session, creds.credentials)
+        if sess:
+            db.delete(sess)
+            db.commit()
+    return {"message": "Logout berhasil"}
 
 @app.get("/api/v1/me")
 def me(user=Depends(get_current_user), org_id=Depends(get_current_org), db=Depends(get_db)):
     m = db.query(models.Membership).filter_by(organization_id=org_id, user_id=user.id).first()
+    # Semua org user
+    all_memberships = db.query(models.Membership).filter_by(user_id=user.id).all()
+    organizations = []
+    for mem in all_memberships:
+        org = db.query(models.Organization).filter_by(id=mem.organization_id).first()
+        if org:
+            organizations.append({
+                "organization_id": org.id,
+                "organization_name": org.name,
+                "role": mem.role,
+            })
     return {
         "id": user.id,
         "email": user.email,
         "full_name": user.full_name,
+        "is_superadmin": user.is_superadmin,
         "organization_id": org_id,
-        "role": m.role if m else "viewer"
+        "role": m.role if m else "viewer",
+        "organizations": organizations,
     }
 
 # ==========================================
@@ -262,6 +340,7 @@ def list_members(target_org_id: int, org_id=Depends(get_current_org), db=Depends
 @app.post("/api/v1/organizations/{target_org_id}/members", status_code=201)
 def add_member(target_org_id: int, p: schemas.MemberAdd,
                user=Depends(get_current_user), org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user, allowed=("owner",))
     if target_org_id != org_id:
         raise HTTPException(403, "Akses ke organisasi lain ditolak")
     require_org_role(db, org_id, user)
@@ -280,6 +359,7 @@ def add_member(target_org_id: int, p: schemas.MemberAdd,
 @app.patch("/api/v1/organizations/{target_org_id}/members/{target_user_id}")
 def update_member_role(target_org_id: int, target_user_id: int, p: schemas.MemberRoleUpdate,
                        user=Depends(get_current_user), org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user, allowed=("owner",))
     if target_org_id != org_id:
         raise HTTPException(403, "Akses ke organisasi lain ditolak")
     require_org_role(db, org_id, user)
@@ -294,6 +374,7 @@ def update_member_role(target_org_id: int, target_user_id: int, p: schemas.Membe
 @app.delete("/api/v1/organizations/{target_org_id}/members/{target_user_id}")
 def remove_member(target_org_id: int, target_user_id: int,
                   user=Depends(get_current_user), org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user, allowed=("owner",))
     if target_org_id != org_id:
         raise HTTPException(403, "Akses ke organisasi lain ditolak")
     require_org_role(db, org_id, user)
@@ -591,6 +672,18 @@ def update_opening_balance(ob_id: int, p: schemas.OpeningBalanceUpdate, user=Dep
     db.commit(); db.refresh(ob)
     return {"id": ob.id, "account_id": ob.account_id, "amount": money(ob.amount), "effective_date": str(ob.effective_date)}
 
+@app.delete("/api/v1/opening-balances/{ob_id}", status_code=204)
+def delete_opening_balance(ob_id: int, user=Depends(get_current_user),
+                           org_id=Depends(get_current_org), db=Depends(get_db)):
+    require_org_role(db, org_id, user)
+    ob = db.query(models.OpeningBalance).filter_by(id=ob_id, organization_id=org_id).first()
+    if not ob:
+        raise HTTPException(404, "Saldo awal tidak ditemukan")
+    db.delete(ob)
+    log_audit(db, org_id, user.id, "OPENING_BALANCE_DELETED", "opening_balances", ob_id)
+    db.commit()
+    return None
+
 # ==========================================
 # 7. FINANCIAL REPORTS & CALCULATION RUNS
 # ==========================================
@@ -651,7 +744,7 @@ def list_calculation_runs(limit: int = 20, org_id=Depends(get_current_org), db=D
 # 8. RISK RULES & SIGNALS
 # ==========================================
 @app.get("/api/v1/risk-rules")
-def list_risk_rules(db=Depends(get_db)):
+def list_risk_rules(user=Depends(get_current_user), db=Depends(get_db)):
     rules = db.query(models.RiskRuleVersion).all()
     return [{
         "id": r.id, "rule_code": r.rule_code, "version": r.version,
@@ -1956,7 +2049,7 @@ def run_forecast_backtest(p: schemas.ForecastBacktestCreate, user=Depends(get_cu
     - Metrik: MAE, WAPE, sMAPE, Bias, MASE.
     - Gate check: model harus beat naive baseline; bias harus acceptable.
     - Hasil disimpan ke tabel forecast_backtests untuk audit trail.
-    - Sesuai FINANCIAL_AI_METHODOLOGY.md §7: gunakan rolling-origin, bukan random shuffle.
+    - Sesuai FINANCIAL_AI_METHODOLOGY.md Â§7: gunakan rolling-origin, bukan random shuffle.
     """
     require_org_role(db, org_id, user, allowed=("owner", "admin", "member"))
     txs = db.query(models.Transaction).filter_by(
@@ -2102,8 +2195,8 @@ def explain_recommendation(rec_id: int, user=Depends(get_current_user),
     """
     Hasilkan penjelasan naratif untuk satu rekomendasi menggunakan LLM adapter.
 
-    - Jika OPENAI_API_KEY dikonfigurasi dan output lolos validasi → source: "llm"
-    - Jika tidak ada API key, LLM gagal, atau output tidak valid → source: "fallback"
+    - Jika OPENAI_API_KEY dikonfigurasi dan output lolos validasi â†’ source: "llm"
+    - Jika tidak ada API key, LLM gagal, atau output tidak valid â†’ source: "fallback"
     - Tidak ada angka absolut atau PII yang dikirim ke LLM (privacy guard).
     - Penjelasan bersifat informatif; bukan saran keuangan, pajak, atau hukum.
     """
@@ -2433,6 +2526,137 @@ def confirm_csv_import(p: schemas.ImportConfirmIn, user=Depends(get_current_user
     }
 
 # ==========================================
+# SUPER ADMIN
+# ==========================================
+
+@app.get("/api/v1/admin/organizations")
+def admin_list_organizations(
+    limit: int = Query(50, le=200),
+    offset: int = 0,
+    include_suspended: bool = Query(True),
+    user=Depends(get_current_user),
+    db=Depends(get_db)
+):
+    """Daftar semua organisasi beserta owner. Hanya Super Admin."""
+    require_superadmin(user)
+    q = db.query(models.Organization).order_by(models.Organization.id.desc())
+    if not include_suspended:
+        q = q.filter_by(is_active=True)
+    orgs = q.offset(offset).limit(limit).all()
+    result = []
+    for org in orgs:
+        profile = db.query(models.BusinessProfile).filter_by(organization_id=org.id).first()
+        owner_m = db.query(models.Membership).filter_by(organization_id=org.id, role="owner").first()
+        owner = db.query(models.User).filter_by(id=owner_m.user_id).first() if owner_m else None
+        member_count = db.query(models.Membership).filter_by(organization_id=org.id).count()
+        tx_count = db.query(models.Transaction).filter_by(organization_id=org.id).count()
+        result.append({
+            "id": org.id,
+            "name": org.name,
+            "industry": profile.industry if profile else None,
+            "currency": profile.currency if profile else "IDR",
+            "owner_name": owner.full_name if owner else None,
+            "owner_email": owner.email if owner else None,
+            "member_count": member_count,
+            "transaction_count": tx_count,
+            "is_active": org.is_active,
+            "suspended_reason": org.suspended_reason,
+            "created_at": str(org.created_at),
+        })
+    total_q = db.query(models.Organization)
+    if not include_suspended:
+        total_q = total_q.filter_by(is_active=True)
+    total = total_q.count()
+    return {"total": total, "limit": limit, "offset": offset, "items": result}
+
+@app.patch("/api/v1/admin/organizations/{org_id}/suspend")
+def admin_suspend_org(org_id: int, p: schemas.OrgSuspendToggle,
+                      user=Depends(get_current_user), db=Depends(get_db)):
+    """Suspend atau aktifkan organisasi. Hanya Super Admin."""
+    require_superadmin(user)
+    org = db.query(models.Organization).filter_by(id=org_id).first()
+    if not org:
+        raise HTTPException(404, "Organisasi tidak ditemukan")
+    org.is_active = not p.suspend
+    org.suspended_at = datetime.now(timezone.utc) if p.suspend else None
+    org.suspended_reason = p.reason if p.suspend else None
+    db.commit()
+    return {
+        "id": org.id,
+        "name": org.name,
+        "is_active": org.is_active,
+        "suspended_at": str(org.suspended_at) if org.suspended_at else None,
+        "suspended_reason": org.suspended_reason,
+    }
+
+@app.get("/api/v1/admin/users")
+def admin_list_users(
+    limit: int = Query(50, le=200),
+    offset: int = 0,
+    user=Depends(get_current_user),
+    db=Depends(get_db)
+):
+    """Daftar semua user. Hanya Super Admin."""
+    require_superadmin(user)
+    users = db.query(models.User).order_by(models.User.id.desc()).offset(offset).limit(limit).all()
+    result = []
+    for u in users:
+        memberships = db.query(models.Membership).filter_by(user_id=u.id).all()
+        result.append({
+            "id": u.id,
+            "email": u.email,
+            "full_name": u.full_name,
+            "is_superadmin": u.is_superadmin,
+            "organization_count": len(memberships),
+            "created_at": str(u.created_at),
+        })
+    total = db.query(models.User).count()
+    return {"total": total, "limit": limit, "offset": offset, "items": result}
+
+@app.get("/api/v1/admin/stats")
+def admin_stats(user=Depends(get_current_user), db=Depends(get_db)):
+    """Statistik global platform. Hanya Super Admin."""
+    require_superadmin(user)
+    from sqlalchemy import func as sqlfunc
+    total_orgs = db.query(models.Organization).count()
+    total_users = db.query(models.User).count()
+    total_transactions = db.query(models.Transaction).filter_by(status="posted").count()
+    total_imports = db.query(models.ImportBatch).filter_by(status="confirmed").count()
+    new_orgs_today = db.query(models.Organization).filter(
+        sqlfunc.date(models.Organization.created_at) == date.today()
+    ).count()
+    new_users_today = db.query(models.User).filter(
+        sqlfunc.date(models.User.created_at) == date.today()
+    ).count()
+    return {
+        "total_organizations": total_orgs,
+        "total_users": total_users,
+        "total_posted_transactions": total_transactions,
+        "total_confirmed_imports": total_imports,
+        "new_organizations_today": new_orgs_today,
+        "new_users_today": new_users_today,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+@app.patch("/api/v1/admin/users/{user_id}/superadmin")
+def admin_toggle_superadmin(
+    user_id: int,
+    p: schemas.SuperAdminToggle,
+    user=Depends(get_current_user),
+    db=Depends(get_db)
+):
+    """Toggle is_superadmin. Hanya Super Admin yang sudah ada."""
+    require_superadmin(user)
+    target = db.query(models.User).filter_by(id=user_id).first()
+    if not target:
+        raise HTTPException(404, "User tidak ditemukan")
+    if target.id == user.id:
+        raise HTTPException(400, "Tidak dapat mengubah status superadmin diri sendiri")
+    target.is_superadmin = p.is_superadmin
+    db.commit()
+    return {"user_id": target.id, "email": target.email, "is_superadmin": target.is_superadmin}
+
+# ==========================================
 # 12. AUDIT EVENTS
 # ==========================================
 @app.get("/api/v1/audit-events")
@@ -2451,3 +2675,4 @@ def list_audit_events(limit: int = 50, offset: int = 0,
             "payload": ev.payload, "created_at": str(ev.created_at)
         } for ev in rows]
     }
+
