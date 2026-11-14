@@ -171,9 +171,19 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = Query(
     db = next(get_db())
     try:
         session = db.query(models.Session).filter_by(token=token).first()
-        if not session or session.expires_at < datetime.now(timezone.utc):
+        
+        # Check expiration - handle both timezone-aware and naive datetimes (SQLite stores naive)
+        if not session:
             await websocket.close(code=1008, reason="Invalid or expired token")
             return
+        
+        if session.expires_at:
+            # If expires_at is timezone-aware, compare with aware datetime
+            # If naive (SQLite), compare with naive datetime
+            now = datetime.now(timezone.utc) if session.expires_at.tzinfo else datetime.now()
+            if session.expires_at < now:
+                await websocket.close(code=1008, reason="Invalid or expired token")
+                return
         
         user = db.query(models.User).filter_by(id=session.user_id).first()
         if not user:

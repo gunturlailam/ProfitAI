@@ -46,7 +46,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     // Get token for authentication - check all storage locations
     const token = getAccessToken();
     if (!token) {
-      console.warn("[WebSocket] No access token found, skipping connection");
+      // Silent skip if no token (normal on page load before login)
+      // Use console.debug to avoid cluttering console in production
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[WebSocket] No access token found, skipping connection");
+      }
       return;
     }
 
