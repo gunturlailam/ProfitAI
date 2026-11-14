@@ -2347,7 +2347,133 @@ def explain_recommendation(rec_id: int, user=Depends(get_current_user),
     }
 
 # ==========================================
-# 11. IMPORT CSV BATCHES & ROWS
+# 11. RATIO ALERTS (Alert History & Tracking)
+# ==========================================
+@app.get("/api/v1/ratio-alerts")
+def get_ratio_alerts(
+    date_from: date = Query(None, alias="from"),
+    date_to: date = Query(None, alias="to"),
+    status: str = Query(None),  # active, acknowledged, resolved, dismissed
+    level: str = Query(None),  # critical, warning
+    limit: int = Query(50),
+    user=Depends(get_current_user),
+    org_id=Depends(get_current_org),
+    db=Depends(get_db)
+):
+    """
+    Retrieve alert history untuk organization.
+    
+    Query params:
+    - from/to: Filter by period
+    - status: Filter by status (active/acknowledged/resolved/dismissed)
+    - level: Filter by severity (critical/warning)
+    - limit: Max results (default 50)
+    """
+    q = db.query(models.RatioAlert).filter_by(organization_id=org_id)
+    
+    if date_from:
+        q = q.filter(models.RatioAlert.period_from >= date_from)
+    if date_to:
+        q = q.filter(models.RatioAlert.period_to <= date_to)
+    if status:
+        q = q.filter(models.RatioAlert.status == status)
+    if level:
+        q = q.filter(models.RatioAlert.level == level)
+    
+    alerts = q.order_by(models.RatioAlert.created_at.desc()).limit(limit).all()
+    
+    result = []
+    for a in alerts:
+        result.append({
+            "id": a.id,
+            "alert_code": a.alert_code,
+            "category": a.category,
+            "category_label": a.category_label,
+            "level": a.level,
+            "title": a.title,
+            "message": a.message,
+            "ratio_codes": a.ratio_codes,
+            "direction": a.direction,
+            "evidence": a.evidence,
+            "period": {
+                "from": str(a.period_from),
+                "to": str(a.period_to),
+            },
+            "status": a.status,
+            "acknowledged_at": a.acknowledged_at.isoformat() if a.acknowledged_at else None,
+            "acknowledged_by": a.acknowledged_by,
+            "resolved_at": a.resolved_at.isoformat() if a.resolved_at else None,
+            "user_notes": a.user_notes,
+            "created_at": a.created_at.isoformat(),
+        })
+    
+    return {
+        "count": len(result),
+        "alerts": result,
+    }
+
+
+@app.patch("/api/v1/ratio-alerts/{alert_id}")
+def update_ratio_alert(
+    alert_id: int,
+    payload: dict,
+    user=Depends(get_current_user),
+    org_id=Depends(get_current_org),
+    db=Depends(get_db)
+):
+    """
+    Update alert status: acknowledge, resolve, or dismiss.
+    
+    Payload:
+    {
+      "status": "acknowledged" | "resolved" | "dismissed",
+      "user_notes": "optional notes"
+    }
+    """
+    alert = db.query(models.RatioAlert).filter_by(
+        id=alert_id,
+        organization_id=org_id
+    ).first()
+    
+    if not alert:
+        raise HTTPException(404, "Alert tidak ditemukan")
+    
+    new_status = payload.get("status")
+    if new_status not in ["acknowledged", "resolved", "dismissed", "active"]:
+        raise HTTPException(400, "Status tidak valid")
+    
+    alert.status = new_status
+    
+    if new_status == "acknowledged" and not alert.acknowledged_at:
+        alert.acknowledged_at = func.now()
+        alert.acknowledged_by = user.id
+    
+    if new_status == "resolved" and not alert.resolved_at:
+        alert.resolved_at = func.now()
+    
+    if "user_notes" in payload:
+        alert.user_notes = payload["user_notes"]
+    
+    log_audit(db, org_id, user.id, "ALERT_UPDATED", "ratio_alerts", alert.id, {
+        "old_status": alert.status,
+        "new_status": new_status,
+        "has_notes": bool(payload.get("user_notes")),
+    })
+    
+    db.commit()
+    db.refresh(alert)
+    
+    return {
+        "id": alert.id,
+        "status": alert.status,
+        "acknowledged_at": alert.acknowledged_at.isoformat() if alert.acknowledged_at else None,
+        "resolved_at": alert.resolved_at.isoformat() if alert.resolved_at else None,
+        "user_notes": alert.user_notes,
+    }
+
+
+# ==========================================
+# 12. IMPORT CSV BATCHES & ROWS
 # ==========================================
 @app.get("/api/v1/imports/batches")
 def list_import_batches(org_id=Depends(get_current_org), db=Depends(get_db)):
@@ -2761,7 +2887,7 @@ def admin_toggle_superadmin(
     return {"user_id": target.id, "email": target.email, "is_superadmin": target.is_superadmin}
 
 # ==========================================
-# 12. AUDIT EVENTS
+# 13. AUDIT EVENTS
 # ==========================================
 @app.get("/api/v1/audit-events")
 def list_audit_events(limit: int = 50, offset: int = 0,

@@ -436,3 +436,32 @@ class Session(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=True)
+
+
+# 31. ratio_alerts: persistent alert history untuk tracking & analytics
+class RatioAlert(Base):
+    __tablename__ = "ratio_alerts"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    alert_code = Column(Text, nullable=False)  # category-level unique code
+    category = Column(Text, nullable=False)  # liquidity, solvency, activity, profitability, growth
+    category_label = Column(Text, nullable=False)  # Indonesian label
+    level = Column(Text, nullable=False)  # critical, warning
+    title = Column(Text, nullable=False)
+    message = Column(Text, nullable=False)
+    ratio_codes = Column(JSON, nullable=False)  # list of affected ratio codes
+    direction = Column(Text, nullable=False)  # declining, rising
+    evidence = Column(JSON, nullable=False)  # list of evidence strings
+    period_from = Column(Date, nullable=False)
+    period_to = Column(Date, nullable=False)
+    # Status tracking untuk user action
+    status = Column(Text, nullable=False, default="active")  # active, acknowledged, resolved, dismissed
+    acknowledged_at = Column(DateTime(timezone=True), nullable=True)
+    acknowledged_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    user_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        Index("idx_ratio_alert_org_period", "organization_id", "period_from", "period_to"),
+        Index("idx_ratio_alert_org_status", "organization_id", "status", "level"),
+    )
